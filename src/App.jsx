@@ -47,7 +47,7 @@ function App() {
 
       {/* Main Top Header Navbar (Hidden in printable/dashboard states to maximize screen room) */}
       {page !== 'dashboard' && (
-        <header className="navbar" style={{ padding: '0.85rem 4rem' }}>
+        <header className="navbar">
           <div className="logo-container" onClick={() => setPage('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <div style={{
               width: '46px',
@@ -100,7 +100,7 @@ function App() {
 
       {/* Footer (Hidden in Dashboard View for application-style layout) */}
       {page !== 'dashboard' && (
-        <footer className="footer" style={{ padding: '3.5rem 4rem', display: 'grid', gridTemplateColumns: '1.2fr 1fr 1.3fr', gap: '3rem', textAlign: 'left', borderTop: '1.5px solid rgba(255, 255, 255, 0.5)' }}>
+        <footer className="footer">
           <div>
             <div className="logo-container" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div style={{

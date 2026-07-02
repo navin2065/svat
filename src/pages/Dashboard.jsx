@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, FileText, History, LogOut, Plus, Trash2, Printer, Save, IndianRupee, Calendar, TrendingUp, Truck } from 'lucide-react';
 import LrCreator from './LrCreator';
 import Quotation from './Quotation';
@@ -155,6 +155,38 @@ export default function Dashboard({ onLogout }) {
   const [loadedLr, setLoadedLr] = useState(null);
   const [loadedQuotation, setLoadedQuotation] = useState(null);
   const [historySubTab, setHistorySubTab] = useState('dn');
+
+  const previewContainerRef = useRef(null);
+  const [previewScale, setPreviewScale] = useState(1);
+  const cardRef = useRef(null);
+  const [cardHeight, setCardHeight] = useState(1123);
+
+  useEffect(() => {
+    const updateScale = () => {
+      if (previewContainerRef.current) {
+        // Calculate available width minus some padding
+        const availableWidth = previewContainerRef.current.clientWidth - 40; 
+        const newScale = availableWidth / 794; // 794 is the invoice-preview-card width
+        setPreviewScale(newScale < 1 ? newScale : 1);
+      }
+    };
+    
+    updateScale();
+    setTimeout(updateScale, 100); 
+    window.addEventListener('resize', updateScale);
+    return () => window.removeEventListener('resize', updateScale);
+  }, [activeTab]);
+
+  useEffect(() => {
+    if (!cardRef.current) return;
+    const observer = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        setCardHeight(Math.round(entry.contentRect.height));
+      }
+    });
+    observer.observe(cardRef.current);
+    return () => observer.disconnect();
+  }, [activeTab]);
 
   const [invoices, setInvoices] = useState(() => {
     const saved = localStorage.getItem('svat_saved_invoices');
@@ -397,7 +429,16 @@ export default function Dashboard({ onLogout }) {
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
-    window.html2pdf().set(opt).from(element).save();
+    const scaleWrapper = document.getElementById('invoice-scale-wrapper');
+    if (scaleWrapper) {
+      scaleWrapper.style.transform = 'scale(1)';
+    }
+
+    window.html2pdf().set(opt).from(element).save().then(() => {
+      if (scaleWrapper) {
+        scaleWrapper.style.transform = `scale(${previewScale})`;
+      }
+    });
   };
 
   const handleLoadInvoice = (historyItem) => {
@@ -1279,11 +1320,11 @@ export default function Dashboard({ onLogout }) {
                 </div>
               </div> {/* End of invoice-form-container */}
 
-              {/* LIVE PREVIEW COLUMN (Visible on screen, responsive and scrolls on mobile) */}
-              <div className="invoice-preview-container">
-                <div className="preview-scroll-wrapper" style={{ overflowX: 'auto', width: '100%' }}>
+              {/* LIVE PREVIEW COLUMN (Visible on screen, responsive and scales automatically on mobile) */}
+              <div className="invoice-preview-container" ref={previewContainerRef} style={{ width: '100%', overflowX: 'hidden', overflowY: 'auto' }}>
+                <div id="invoice-scale-wrapper" style={{ transform: `scale(${previewScale})`, transformOrigin: 'top left', transition: 'transform 0.2s', width: '794px', height: `${cardHeight * previewScale}px` }}>
                   {/* Printable Invoice Page (Restructured Grid matching the first image layout exactly) */}
-                  <div className="invoice-preview-card" style={{ padding: '2rem', backgroundColor: '#FFFFFF', color: '#000000', width: '794px', boxSizing: 'border-box' }}>
+                  <div className="invoice-preview-card" ref={cardRef} style={{ padding: '2rem', backgroundColor: '#FFFFFF', color: '#000000', width: '794px', boxSizing: 'border-box' }}>
                     <div className="bill-header" style={{
                       border: '1.5px solid #000000',
                       borderBottom: 'none',

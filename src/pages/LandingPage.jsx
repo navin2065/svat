@@ -164,7 +164,7 @@ export default function LandingPage({ onNavigate }) {
       <div className="hero-spacer"></div>
 
       {/* SELECT BRANCH OFFICE INFO (Mockup matching the uploaded photo) */}
-      <section style={{ maxWidth: '1200px', margin: '4rem auto 8rem', padding: '0 2rem' }}>
+      <section className="branch-info-section">
         <h2 style={{ fontSize: '1.6rem', fontWeight: 800, color: 'var(--text-dark)', textTransform: 'uppercase', marginBottom: '1.5rem', textAlign: 'left', letterSpacing: '0.5px' }}>
           Select Branch Office Info
         </h2>
@@ -197,7 +197,7 @@ export default function LandingPage({ onNavigate }) {
         </div>
 
         {/* Dynamic Branch Card Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', alignItems: 'stretch' }} className="form-grid-2">
+        <div className="branch-card-grid">
           
           {/* Left: Google Maps Live view mock */}
           <div style={{
@@ -283,7 +283,7 @@ export default function LandingPage({ onNavigate }) {
                 </p>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 0.9fr', gap: '12px', marginBottom: '2rem' }} className="form-grid-2">
+              <div className="branch-details-row-grid">
                 <div style={{ padding: '12px 16px', border: '1.5px solid rgba(0,0,0,0.08)', borderRadius: '16px', backgroundColor: 'rgba(255, 255, 255, 0.45)' }}>
                   <p style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                     Dispatcher Dial
@@ -343,18 +343,7 @@ export default function LandingPage({ onNavigate }) {
         </div>
 
         {/* Bottom notice alert panel */}
-        <div style={{
-          marginTop: '1.5rem',
-          padding: '1.25rem 2rem',
-          borderRadius: '24px',
-          border: '1.5px solid rgba(0,0,0,0.06)',
-          backgroundColor: 'rgba(255,255,255,0.45)',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '15px',
-          textAlign: 'left',
-          boxShadow: 'var(--shadow-premium)'
-        }}>
+        <div className="branch-bottom-notice">
           <div style={{
             width: '32px',
             height: '32px',
