@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download } from 'lucide-react';
+import { db } from '../firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) => {
   const [deliveryCharges, setDeliveryCharges] = useState({
@@ -49,8 +51,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     }
   }, [loadedData, type]);
 
-  const handleSaveQuotation = () => {
-    const savedQuotes = JSON.parse(localStorage.getItem('svat_saved_quotations') || '[]');
+  const handleSaveQuotation = async () => {
     const quoteId = loadedData && loadedData.id ? loadedData.id : `QO-${Date.now().toString().slice(-5)}`;
     
     const newQuote = {
@@ -63,21 +64,33 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
         deliveryCharges,
         domesticLocation,
         domesticRates
-      }
+      },
+      createdAt: Date.now()
     };
 
-    const index = savedQuotes.findIndex(q => q.id === quoteId);
-    if (index > -1) {
-      savedQuotes[index] = newQuote;
-    } else {
-      savedQuotes.unshift(newQuote);
-    }
-    
-    localStorage.setItem('svat_saved_quotations', JSON.stringify(savedQuotes));
-    if (triggerToast) {
-      triggerToast('Quotation saved successfully to history!');
-    } else {
-      alert('Quotation saved successfully to history!');
+    try {
+      await setDoc(doc(db, 'quotations', quoteId), newQuote);
+      if (triggerToast) {
+        triggerToast('Quotation saved successfully!');
+      } else {
+        alert('Quotation saved successfully!');
+      }
+    } catch (err) {
+      console.error("Error saving quotation to Firestore:", err);
+      // Fallback
+      const savedQuotes = JSON.parse(localStorage.getItem('svat_saved_quotations') || '[]');
+      const index = savedQuotes.findIndex(q => q.id === quoteId);
+      if (index > -1) {
+        savedQuotes[index] = newQuote;
+      } else {
+        savedQuotes.unshift(newQuote);
+      }
+      localStorage.setItem('svat_saved_quotations', JSON.stringify(savedQuotes));
+      if (triggerToast) {
+        triggerToast('Quotation saved locally!');
+      } else {
+        alert('Quotation saved locally!');
+      }
     }
   };
 

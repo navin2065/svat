@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Plus, Trash2, Printer, Save, Truck, Info } from 'lucide-react';
+import { db } from '../firebase';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 // Suggestions Dropdown component with prefix-first sorting
 const SuggestionsDropdown = ({ query, list, onSelect }) => {
@@ -254,7 +256,8 @@ const DEFAULT_LR = {
   companyIso: 'QTN202604894',
   companyPhone1: '96552 37104',
   companyPhone2: '96552 35088',
-  companyEmail: 'vaarahitpt104@gmail.com'
+  companyEmail: 'vaarahitpt104@gmail.com',
+  companyWebsite: 'www.sreevaarahiammantransports.com'
 };
 
 const DOTTED_LINE_SVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc0JyBoZWlnaHQ9JzIwJz48cmVjdCB4PScwJyB5PScxOScgd2lkdGg9JzInIGhlaWdodD0nMScgZmlsbD0nIzA4MTAzQScvPjwvc3ZnPg==';
@@ -357,6 +360,19 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
       "Cone Carton Box"
     ];
   });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'suggestions', 'goods_history'), (docSnap) => {
+      if (docSnap.exists()) {
+        const list = docSnap.data().list || [];
+        setGoodsHistory(list);
+        localStorage.setItem('svat_goods_history', JSON.stringify(list));
+      }
+    }, (error) => {
+      console.error("Firestore suggestions listener error for goodsHistory:", error);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const [savedLrs, setSavedLrs] = useState(() => {
     return JSON.parse(localStorage.getItem('svat_saved_lrs') || '[]');
@@ -513,17 +529,19 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
     setShowSaveConfirm(true);
   };
 
-  const confirmSaveLR = () => {
+  const confirmSaveLR = async () => {
     // Add current goods description to local storage history list
     const currentGoods = (formData.cargoItems?.[0]?.goodsDescription || '').trim();
+    let updatedHistory = [...goodsHistory];
+    let historyChanged = false;
     if (currentGoods && !goodsHistory.includes(currentGoods)) {
-      const updated = [...goodsHistory, currentGoods];
-      setGoodsHistory(updated);
-      localStorage.setItem('svat_goods_history', JSON.stringify(updated));
+      updatedHistory.push(currentGoods);
+      setGoodsHistory(updatedHistory);
+      localStorage.setItem('svat_goods_history', JSON.stringify(updatedHistory));
+      historyChanged = true;
     }
     
     // Save the receipt to a list of saved LRs (optional helper log)
-    const currentSavedLrs = JSON.parse(localStorage.getItem('svat_saved_lrs') || '[]');
     const newLrEntry = {
       ...formData,
       id: formData.lrNo || `LR-${Date.now().toString().slice(-5)}`,
@@ -533,24 +551,46 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
       amount: totalAmount,
       truckNo: formData.truckNo,
       from: formData.from,
-      to: formData.to
+      to: formData.to,
+      createdAt: Date.now()
     };
     
-    const index = currentSavedLrs.findIndex(lr => lr.id === newLrEntry.id);
-    if (index > -1) {
-      currentSavedLrs[index] = newLrEntry;
-    } else {
-      currentSavedLrs.unshift(newLrEntry);
+    try {
+      await setDoc(doc(db, 'lorry_receipts', newLrEntry.id), newLrEntry);
+      if (triggerToast) {
+        triggerToast('LR saved successfully!');
+      } else {
+        alert('LR saved successfully!');
+      }
+    } catch (err) {
+      console.error("Error saving LR to Firestore:", err);
+      // Fallback
+      const currentSavedLrs = JSON.parse(localStorage.getItem('svat_saved_lrs') || '[]');
+      const index = currentSavedLrs.findIndex(lr => lr.id === newLrEntry.id);
+      if (index > -1) {
+        currentSavedLrs[index] = newLrEntry;
+      } else {
+        currentSavedLrs.unshift(newLrEntry);
+      }
+      localStorage.setItem('svat_saved_lrs', JSON.stringify(currentSavedLrs));
+      setSavedLrs(currentSavedLrs);
+
+      if (triggerToast) {
+        triggerToast('LR saved locally!');
+      } else {
+        alert('LR saved locally!');
+      }
     }
-    localStorage.setItem('svat_saved_lrs', JSON.stringify(currentSavedLrs));
-    setSavedLrs(currentSavedLrs);
+
+    if (historyChanged) {
+      try {
+        await setDoc(doc(db, 'suggestions', 'goods_history'), { list: updatedHistory });
+      } catch (err) {
+        console.error("Error saving goods suggestions to Firestore:", err);
+      }
+    }
 
     setShowSaveConfirm(false);
-    if (triggerToast) {
-      triggerToast('LR saved successfully to history!');
-    } else {
-      alert('LR saved successfully to history!');
-    }
   };
 
   const handleDownloadPDF = () => {
@@ -879,6 +919,14 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
               onChange={(e) => handleInputChange('companyEmail', e.target.value)}
               suggestions={getFieldSuggestions('companyEmail')}
               onSelectSuggestion={(val) => handleInputChange('companyEmail', val)}
+            />
+            <AutocompleteInput
+              label="Website"
+              maxLength={50}
+              value={formData.companyWebsite || ''}
+              onChange={(e) => handleInputChange('companyWebsite', e.target.value)}
+              suggestions={getFieldSuggestions('companyWebsite')}
+              onSelectSuggestion={(val) => handleInputChange('companyWebsite', val)}
             />
           </div>
 
@@ -1388,7 +1436,18 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                   
                   {/* Logo Box */}
                   <div style={{ width: '8%', borderRight: '2px solid #08103A', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '2px' }}>
-                    <img src="/logo2.png" alt="Logo" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
+                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                      <img src="/logo2.png" alt="Logo" style={{ width: '56px', height: '56px', objectFit: 'contain' }} />
+                      <span style={{ 
+                        position: 'absolute', 
+                        top: '1px', 
+                        right: '0px', 
+                        fontSize: '0.45rem', 
+                        fontWeight: 'bold', 
+                        color: '#08103A',
+                        lineHeight: '1'
+                      }}>TM</span>
+                    </div>
                   </div>
 
                   {/* Tax Info Box */}
@@ -1459,6 +1518,16 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                       onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
                     >
                       Mail: {formData.companyEmail}
+                    </a>
+                    <a 
+                      href={formData.companyWebsite ? (formData.companyWebsite.startsWith('http') ? formData.companyWebsite : `https://${formData.companyWebsite}`) : 'https://www.sreevaarahiammantransports.com'} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      style={{ fontSize: '0.52rem', fontWeight: '900', marginTop: '4px', textDecoration: 'none', cursor: 'pointer' }}
+                      onMouseEnter={(e) => e.currentTarget.style.textDecoration = 'underline'}
+                      onMouseLeave={(e) => e.currentTarget.style.textDecoration = 'none'}
+                    >
+                      Web: {formData.companyWebsite || 'www.sreevaarahiammantransports.com'}
                     </a>
                   </div>
                   
@@ -1824,7 +1893,7 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                               </a>
                             </span>
                             <a 
-                              href="https://www.sreevaarahiammantransports.com" 
+                              href={formData.companyWebsite ? (formData.companyWebsite.startsWith('http') ? formData.companyWebsite : `https://${formData.companyWebsite}`) : 'https://www.sreevaarahiammantransports.com'} 
                               target="_blank" 
                               rel="noopener noreferrer" 
                               style={{ 
@@ -1835,7 +1904,7 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                                 cursor: 'pointer'
                               }}
                             >
-                              www.sreevaarahiammantransports.com
+                              {formData.companyWebsite || 'www.sreevaarahiammantransports.com'}
                             </a>
                           </div>
                         </div>

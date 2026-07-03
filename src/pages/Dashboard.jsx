@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { LayoutDashboard, FileText, History, LogOut, Plus, Trash2, Printer, Save, IndianRupee, Calendar, TrendingUp, Truck } from 'lucide-react';
 import LrCreator from './LrCreator';
 import Quotation from './Quotation';
+import { db } from '../firebase';
+import { collection, doc, setDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 
 const SVATLogo = () => (
   <div style={{
@@ -217,11 +219,33 @@ export default function Dashboard({ onLogout }) {
   });
 
   useEffect(() => {
-    if (activeTab === 'history') {
-      setSavedLrs(JSON.parse(localStorage.getItem('svat_saved_lrs') || '[]'));
-      setSavedQuotations(JSON.parse(localStorage.getItem('svat_saved_quotations') || '[]'));
-    }
-  }, [activeTab]);
+    const unsubInvoices = onSnapshot(collection(db, 'invoices'), (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      const sorted = docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setInvoices(sorted);
+      localStorage.setItem('svat_saved_invoices', JSON.stringify(sorted));
+    }, (err) => console.error("Firestore invoices listener error:", err));
+
+    const unsubLrs = onSnapshot(collection(db, 'lorry_receipts'), (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      const sorted = docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setSavedLrs(sorted);
+      localStorage.setItem('svat_saved_lrs', JSON.stringify(sorted));
+    }, (err) => console.error("Firestore LRs listener error:", err));
+
+    const unsubQuotations = onSnapshot(collection(db, 'quotations'), (snapshot) => {
+      const docs = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
+      const sorted = docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setSavedQuotations(sorted);
+      localStorage.setItem('svat_saved_quotations', JSON.stringify(sorted));
+    }, (err) => console.error("Firestore quotations listener error:", err));
+
+    return () => {
+      unsubInvoices();
+      unsubLrs();
+      unsubQuotations();
+    };
+  }, []);
 
   const handleTabChange = (tabName) => {
     setActiveTab(tabName);
@@ -260,6 +284,19 @@ export default function Dashboard({ onLogout }) {
       "PORT OUT FLOW CHARGES"
     ];
   });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'suggestions', 'particulars'), (docSnap) => {
+      if (docSnap.exists()) {
+        const list = docSnap.data().list || [];
+        setSuggestions(list);
+        localStorage.setItem('svat_particulars_suggestions', JSON.stringify(list));
+      }
+    }, (error) => {
+      console.error("Firestore suggestions listener error:", error);
+    });
+    return () => unsubscribe();
+  }, []);
   const [activeRowIdx, setActiveRowIdx] = useState(null);
 
   // Re-calculate totals, GST, and words dynamically (sanitizing commas/symbols)
@@ -377,24 +414,33 @@ export default function Dashboard({ onLogout }) {
     }));
   };
 
-  const handleSaveInvoice = () => {
+  const handleSaveInvoice = async () => {
     const newInvoiceObj = {
       ...formData,
       id: formData.debitNoteNo || `DN-${Date.now().toString().slice(-5)}`,
       consignee: formData.consigneeName,
       date: formData.date,
       amount: totalAmount,
-      status: 'pending'
+      status: 'pending',
+      createdAt: Date.now()
     };
 
-    let updated;
-    if (invoices.some(inv => inv.id === newInvoiceObj.id)) {
-      updated = invoices.map(inv => inv.id === newInvoiceObj.id ? newInvoiceObj : inv);
-    } else {
-      updated = [newInvoiceObj, ...invoices];
+    try {
+      await setDoc(doc(db, 'invoices', newInvoiceObj.id), newInvoiceObj);
+      triggerToast('Invoice saved successfully!');
+    } catch (err) {
+      console.error("Error saving invoice to Firestore:", err);
+      // Fallback
+      let updated;
+      if (invoices.some(inv => inv.id === newInvoiceObj.id)) {
+        updated = invoices.map(inv => inv.id === newInvoiceObj.id ? newInvoiceObj : inv);
+      } else {
+        updated = [newInvoiceObj, ...invoices];
+      }
+      setInvoices(updated);
+      localStorage.setItem('svat_saved_invoices', JSON.stringify(updated));
+      triggerToast('Invoice saved locally!');
     }
-    setInvoices(updated);
-    localStorage.setItem('svat_saved_invoices', JSON.stringify(updated));
 
     // Save newly entered particulars to suggestion list auto-complete
     const updatedSuggestions = [...suggestions];
@@ -409,9 +455,12 @@ export default function Dashboard({ onLogout }) {
     if (suggestionsChanged) {
       setSuggestions(updatedSuggestions);
       localStorage.setItem('svat_particulars_suggestions', JSON.stringify(updatedSuggestions));
+      try {
+        await setDoc(doc(db, 'suggestions', 'particulars'), { list: updatedSuggestions });
+      } catch (err) {
+        console.error("Error saving suggestions to Firestore:", err);
+      }
     }
-
-    triggerToast('Invoice saved successfully!');
   };
 
   const handleDownloadPDF = () => {
@@ -449,23 +498,41 @@ export default function Dashboard({ onLogout }) {
     setActiveTab('creator');
   };
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     const { type, id } = deleteConfirm;
     if (type === 'dn') {
-      const updated = invoices.filter(inv => inv.id !== id);
-      setInvoices(updated);
-      localStorage.setItem('svat_saved_invoices', JSON.stringify(updated));
-      triggerToast('Invoice deleted successfully!');
+      try {
+        await deleteDoc(doc(db, 'invoices', id));
+        triggerToast('Invoice deleted successfully!');
+      } catch (err) {
+        console.error("Error deleting invoice:", err);
+        const updated = invoices.filter(inv => inv.id !== id);
+        setInvoices(updated);
+        localStorage.setItem('svat_saved_invoices', JSON.stringify(updated));
+        triggerToast('Invoice deleted locally!');
+      }
     } else if (type === 'lr') {
-      const updated = savedLrs.filter(lr => lr.id !== id);
-      setSavedLrs(updated);
-      localStorage.setItem('svat_saved_lrs', JSON.stringify(updated));
-      triggerToast('Lorry Receipt deleted successfully!');
+      try {
+        await deleteDoc(doc(db, 'lorry_receipts', id));
+        triggerToast('Lorry Receipt deleted successfully!');
+      } catch (err) {
+        console.error("Error deleting LR:", err);
+        const updated = savedLrs.filter(lr => lr.id !== id);
+        setSavedLrs(updated);
+        localStorage.setItem('svat_saved_lrs', JSON.stringify(updated));
+        triggerToast('Lorry Receipt deleted locally!');
+      }
     } else if (type === 'quote') {
-      const updated = savedQuotations.filter(q => q.id !== id);
-      setSavedQuotations(updated);
-      localStorage.setItem('svat_saved_quotations', JSON.stringify(updated));
-      triggerToast('Quotation deleted successfully!');
+      try {
+        await deleteDoc(doc(db, 'quotations', id));
+        triggerToast('Quotation deleted successfully!');
+      } catch (err) {
+        console.error("Error deleting quotation:", err);
+        const updated = savedQuotations.filter(q => q.id !== id);
+        setSavedQuotations(updated);
+        localStorage.setItem('svat_saved_quotations', JSON.stringify(updated));
+        triggerToast('Quotation deleted locally!');
+      }
     }
     setDeleteConfirm({ show: false, type: '', id: null });
   };
