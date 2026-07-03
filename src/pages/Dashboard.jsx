@@ -11,27 +11,31 @@ const SVATLogo = () => (
     flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
-    border: '1.5px solid #000000',
-    borderRadius: '6px',
-    padding: '4px',
+    padding: '0',
     width: '105px',
     height: '105px',
-    backgroundColor: '#FFFFFF',
     flexShrink: 0,
     position: 'relative'
   }}>
-
-
     <img
       src="/logo.png"
       alt="SVAT Logo"
       style={{
-        width: '95px',
-        height: '95px',
+        width: '100px',
+        height: '100px',
         objectFit: 'contain',
         filter: 'brightness(1.2) contrast(1.1) saturate(1.15)'
       }}
     />
+    <span style={{ 
+      position: 'absolute', 
+      top: '0px', 
+      right: '0px', 
+      fontSize: '0.65rem', 
+      fontWeight: 'bold', 
+      color: '#000000',
+      lineHeight: '1'
+    }}>TM</span>
   </div>
 );
 
@@ -117,10 +121,11 @@ const SuggestionsDropdown = ({ query, list, onSelect, onClose }) => {
 const DEFAULT_INVOICE = {
   companyName: 'SREE VAARAHI AMMAN TRANSPORTS',
   companyAddress: 'NO: 228/1 RAKKIYAPALAYAM, AVINASHI, TIRUPUR - 641654',
-  companyGst: '33AVDPTS410D1Z0',
+  companyGst: '33RSPPS1745J1ZU',
   companyState: 'Tamil Nadu, Code: 33',
   companyEmail: 'varahitpt104@gmail.com',
   companyWebsite: 'www.sreevaarahiammantransports.com',
+  rcmStatus: 'Exempted',
   debitNoteNo: '',
   date: '',
   originalInvoiceNo: '',
@@ -145,14 +150,15 @@ const DEFAULT_INVOICE = {
   bankAccount: '18930200002289',
   bankBranch: 'TIRUPPUR MAIN & BARB0COTTON',
   bankHolderName: 'SREE VAARAHI AMMAN TRANSPORTS',
-  signatoryName: 'P. SARANYA',
+  signatoryName: '',
   gstPercentage: '',
   wordsOverride: ''
 };
 
 export default function Dashboard({ onLogout }) {
-  const [activeTab, setActiveTab] = useState('creator');
+  const [activeTab, setActiveTab] = useState('overview');
   const [isQuotationMenuOpen, setIsQuotationMenuOpen] = useState(false);
+  const [isMobileQuoteMenuOpen, setIsMobileQuoteMenuOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_INVOICE);
   const [loadedLr, setLoadedLr] = useState(null);
   const [loadedQuotation, setLoadedQuotation] = useState(null);
@@ -251,6 +257,7 @@ export default function Dashboard({ onLogout }) {
     setActiveTab(tabName);
     if (!tabName.startsWith('quotation')) setLoadedQuotation(null);
     if (tabName !== 'lr') setLoadedLr(null);
+    setIsMobileQuoteMenuOpen(false);
   };
 
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
@@ -315,14 +322,18 @@ export default function Dashboard({ onLogout }) {
 
     setSubtotal(calculatedSubtotal);
 
-    const gstPct = parseFloat(formData.gstPercentage) || 0;
+    const rcmStatus = formData.rcmStatus || 'Exempted';
+    const gstPct = rcmStatus === 'Exempted' ? 0 : (parseFloat(formData.gstPercentage) || 0);
     const cgstRate = gstPct / 2;
     const sgstRate = gstPct / 2;
 
     const cgst = (calculatedSubtotal * cgstRate) / 100;
     const sgst = (calculatedSubtotal * sgstRate) / 100;
 
-    const grandTotal = calculatedSubtotal + cgst + sgst;
+    // Only add to grand total if RCM status is 'No' (Normal GST)
+    const grandTotal = rcmStatus === 'No'
+      ? (calculatedSubtotal + cgst + sgst)
+      : calculatedSubtotal;
 
     setCgstAmount(cgst);
     setSgstAmount(sgst);
@@ -334,7 +345,7 @@ export default function Dashboard({ onLogout }) {
     } else {
       setAmountInWords(formData.wordsOverride);
     }
-  }, [formData.items, formData.wordsOverride, formData.gstPercentage]);
+  }, [formData.items, formData.wordsOverride, formData.gstPercentage, formData.rcmStatus]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -346,6 +357,7 @@ export default function Dashboard({ onLogout }) {
   const handleClearForm = () => {
     setFormData(prev => ({
       ...prev,
+      rcmStatus: 'Exempted',
       debitNoteNo: '',
       date: '',
       originalInvoiceNo: '',
@@ -650,8 +662,30 @@ export default function Dashboard({ onLogout }) {
     <div className="dashboard-layout">
       {/* Mobile Top Header */}
       <div className="mobile-dashboard-header">
-        <div className="logo-container" style={{ fontSize: '1.2rem' }}>
-          <Truck className="logo-icon" style={{ width: '24px', height: '24px' }} />
+        <div className="logo-container" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <div style={{
+            width: '32px',
+            height: '32px',
+            borderRadius: '50%',
+            backgroundColor: '#FFFFFF',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            overflow: 'hidden',
+            padding: '2px',
+            flexShrink: 0
+          }}>
+            <img
+              src="/logo.png"
+              alt="SVAT Logo"
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: 'contain'
+              }}
+            />
+          </div>
           <span className="logo-text">SVAT</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -1122,23 +1156,45 @@ export default function Dashboard({ onLogout }) {
 
                 {/* Tax Setup */}
                 <h4 className="form-section-title">GST settings</h4>
-                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                  <label className="form-label">GST Percentage (%)</label>
-                  <input
-                    type="number"
-                    step="any"
-                    className="form-input"
-                    placeholder="e.g. 10"
-                    value={formData.gstPercentage}
-                    onChange={(e) => handleInputChange('gstPercentage', e.target.value)}
-                  />
+                <div className="form-grid-2" style={{ marginBottom: '1.25rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">RCM Status</label>
+                    <select
+                      className="form-input"
+                      value={formData.rcmStatus || 'Exempted'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setFormData(prev => ({
+                          ...prev,
+                          rcmStatus: val,
+                          gstPercentage: val === 'Exempted' ? '' : prev.gstPercentage
+                        }));
+                      }}
+                      style={{ height: '46px' }}
+                    >
+                      <option value="Exempted">Exempted</option>
+                      <option value="RCM">RCM</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">GST Percentage (%)</label>
+                    <input
+                      type="number"
+                      step="any"
+                      className="form-input"
+                      placeholder="e.g. 5"
+                      disabled={formData.rcmStatus === 'Exempted'}
+                      value={formData.rcmStatus === 'Exempted' ? '' : formData.gstPercentage}
+                      onChange={(e) => handleInputChange('gstPercentage', e.target.value)}
+                    />
+                  </div>
                 </div>
 
                 {/* Transport Cargo */}
                 <h4 className="form-section-title">Transport & Shipment Details</h4>
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label className="form-label">Vessel / Flight No</label>
+                    <label className="form-label">Vessel / Flight / Truck No</label>
                     <input
                       type="text"
                       className="form-input"
@@ -1423,9 +1479,6 @@ export default function Dashboard({ onLogout }) {
                         }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                             <SVATLogo />
-                            <div style={{ fontSize: '0.52rem', fontWeight: '900', color: '#000000', marginTop: '4px', textAlign: 'center', textTransform: 'uppercase', lineHeight: 1.1 }}>
-                              Container Supplying Agency
-                            </div>
                           </div>
                           <div style={{ paddingLeft: '10px', textAlign: 'left' }}>
                             <div style={{ fontSize: '1.18rem', fontWeight: '800', color: '#0F6236', lineHeight: 1.1 }}>
@@ -1485,7 +1538,7 @@ export default function Dashboard({ onLogout }) {
                         {/* Row 3 */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', borderBottom: '1.5px solid #000000', minHeight: '38px' }}>
                           <div style={{ borderRight: '1.5px solid #000000', padding: '4px' }}>
-                            <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Vessel/Flight No.</span>
+                            <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Vessel/Flight/Truck No.</span>
                             <strong style={{ fontSize: '0.75rem' }}>{formData.vesselFlightNo}</strong>
                           </div>
                           <div style={{ padding: '4px' }}>
@@ -1639,7 +1692,7 @@ export default function Dashboard({ onLogout }) {
                       lineHeight: 1.3
                     }}>
                       <span>Whether GST is payable on Reverse Charge basis (RCM): <strong>{
-                        (parseFloat(formData.gstPercentage) || 0) === 0 ? 'Exempted' : 'No'
+                        formData.rcmStatus === 'RCM' ? 'Yes' : (formData.rcmStatus === 'No' ? 'No' : 'Exempted')
                       }</strong></span>
                     </div>
 
@@ -1706,7 +1759,7 @@ export default function Dashboard({ onLogout }) {
                             for {formData.companyName}
                           </div>
                           <div style={{ textAlign: 'right', marginTop: 'auto' }}>
-                            <strong style={{ display: 'block', fontSize: '0.72rem', textAlign: 'right' }}>({formData.signatoryName})</strong>
+                            <strong style={{ display: 'block', fontSize: '0.72rem', textAlign: 'right' }}>{formData.signatoryName}</strong>
                             <span style={{ fontSize: '0.62rem', fontWeight: 'bold', display: 'block', color: '#444', textAlign: 'right', marginTop: '2px' }}>Authorised Signatory</span>
                           </div>
                         </div>
@@ -1921,7 +1974,7 @@ export default function Dashboard({ onLogout }) {
         </button>
         <button
           className={`mobile-nav-link ${activeTab.startsWith('quotation') ? 'active' : ''}`}
-          onClick={() => handleTabChange('quotation-export')}
+          onClick={() => setIsMobileQuoteMenuOpen(!isMobileQuoteMenuOpen)}
         >
           <FileText className="mobile-nav-icon" />
           <span>Quote</span>
@@ -1997,6 +2050,74 @@ export default function Dashboard({ onLogout }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mobile Quote Submenu Popover */}
+      {isMobileQuoteMenuOpen && (
+        <>
+          <div 
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: 'transparent' }} 
+            onClick={() => setIsMobileQuoteMenuOpen(false)}
+          />
+          <div style={{
+            position: 'fixed',
+            bottom: '75px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#FFFFFF',
+            borderRadius: '16px',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.15)',
+            border: '1.5px solid rgba(0, 0, 0, 0.08)',
+            zIndex: 1000,
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+            width: '220px',
+            padding: '4px'
+          }}>
+            <button
+              style={{
+                padding: '12px 16px',
+                background: activeTab === 'quotation-export' ? 'var(--text-dark)' : 'transparent',
+                color: activeTab === 'quotation-export' ? '#FFFFFF' : 'var(--text-dark)',
+                border: 'none',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'center',
+                transition: 'all 0.2s'
+              }}
+              onClick={() => {
+                handleTabChange('quotation-export');
+                setIsMobileQuoteMenuOpen(false);
+              }}
+            >
+              Export Quotation
+            </button>
+            <button
+              style={{
+                padding: '12px 16px',
+                background: activeTab === 'quotation-domestic' ? 'var(--text-dark)' : 'transparent',
+                color: activeTab === 'quotation-domestic' ? '#FFFFFF' : 'var(--text-dark)',
+                border: 'none',
+                borderRadius: '12px',
+                marginTop: '4px',
+                fontWeight: 'bold',
+                fontSize: '0.9rem',
+                cursor: 'pointer',
+                textAlign: 'center',
+                transition: 'all 0.2s'
+              }}
+              onClick={() => {
+                handleTabChange('quotation-domestic');
+                setIsMobileQuoteMenuOpen(false);
+              }}
+            >
+              Domestic Quotation
+            </button>
+          </div>
+        </>
       )}
     </div>
   );

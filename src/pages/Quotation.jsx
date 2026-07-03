@@ -19,6 +19,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
   const [domesticRates, setDomesticRates] = useState([
     '', '', '', '', '', '', ''
   ]);
+  const [toAddress, setToAddress] = useState('');
 
   const handleDomesticRateChange = (index, value) => {
     const newRates = [...domesticRates];
@@ -34,6 +35,11 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
         if (loadedData.data.domesticLocation) setDomesticLocation(loadedData.data.domesticLocation);
         if (loadedData.data.domesticRates) setDomesticRates(loadedData.data.domesticRates);
       }
+      if (loadedData.data.toAddress !== undefined) {
+        setToAddress(loadedData.data.toAddress);
+      } else {
+        setToAddress(loadedData.type === 'export' ? 'PERLI EXPORTS\nTIRUPUR' : '');
+      }
     } else {
       setDeliveryCharges({
         mumbaiCbm: '',
@@ -48,10 +54,12 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
         to: 'Mumbai'
       });
       setDomesticRates(['', '', '', '', '', '', '']);
+      setToAddress('');
     }
   }, [loadedData, type]);
 
   const handleSaveQuotation = async () => {
+    const savedQuotes = JSON.parse(localStorage.getItem('svat_saved_quotations') || '[]');
     const quoteId = loadedData && loadedData.id ? loadedData.id : `QO-${Date.now().toString().slice(-5)}`;
     
     const newQuote = {
@@ -63,7 +71,8 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
       data: {
         deliveryCharges,
         domesticLocation,
-        domesticRates
+        domesticRates,
+        toAddress
       },
       createdAt: Date.now()
     };
@@ -78,13 +87,13 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     } catch (err) {
       console.error("Error saving quotation to Firestore:", err);
       // Fallback
-      const savedQuotes = JSON.parse(localStorage.getItem('svat_saved_quotations') || '[]');
       const index = savedQuotes.findIndex(q => q.id === quoteId);
       if (index > -1) {
         savedQuotes[index] = newQuote;
       } else {
         savedQuotes.unshift(newQuote);
       }
+      
       localStorage.setItem('svat_saved_quotations', JSON.stringify(savedQuotes));
       if (triggerToast) {
         triggerToast('Quotation saved locally!');
@@ -98,6 +107,11 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     const element = document.getElementById(contentId);
     if (!element) return;
     
+    const textareas = element.querySelectorAll('.pdf-textarea');
+    textareas.forEach(ta => {
+      ta.style.border = 'none';
+    });
+    
     const opt = {
       margin:       0.2,
       filename:     filename,
@@ -106,7 +120,11 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
     
-    window.html2pdf().set(opt).from(element).save();
+    window.html2pdf().set(opt).from(element).save().then(() => {
+      textareas.forEach(ta => {
+        ta.style.border = '1px dashed #ccc';
+      });
+    });
   };
 
   const inputStyle = {
@@ -128,25 +146,42 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
           {/* Container for the Quotation Content - This gets converted to PDF */}
           <div id="quotation-content" style={{ backgroundColor: '#fff', color: '#000', padding: '20px 30px', fontFamily: '"Times New Roman", Times, serif', width: '100%', maxWidth: '800px', border: '1px solid #ccc', boxShadow: '0 0 10px rgba(0,0,0,0.1)' }}>
         {/* Header */}
-        <div style={{ textAlign: 'center', marginBottom: '15px' }}>
-          <h1 style={{ fontSize: '20px', fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 4px 0' }}>
-            SREE VAARAHI AMMAN TRANSPORTS
-          </h1>
-          <h2 style={{ fontSize: '13px', fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 8px 0' }}>
-            EXPERT IN EXPORT CARGO MOVERS
-          </h2>
-          <p style={{ fontSize: '11px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
-            (REGULAR SERVICE TO: MUMBAI, CHENNAI, BANGALORE, TUTICORIN, COCHIN, PAN INDIA)
-          </p>
-          <p style={{ fontSize: '11px', margin: '0 0 4px 0' }}>
-            228/1, Rakkiyapalayam, Avinashi, Tirupur - 641 654.
-          </p>
-          <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
-            Contact: +91-9655237104, +91-9655235088, +91-9585907007
-          </p>
-          <p style={{ fontSize: '11px', margin: '0 0 8px 0' }}>
-            MAIL ID. <a href="mailto:Vaarahitpt104@gmail.com" style={{ color: 'blue', textDecoration: 'underline' }}>Vaarahitpt104@gmail.com</a> , website ; <a href="http://www.sreevaarahiammantransports.com" style={{ color: 'black', textDecoration: 'none' }}>www.sreevaarahiammantransports.com</a>
-          </p>
+        <div style={{ display: 'flex', alignItems: 'center', marginBottom: '15px', borderBottom: '1px solid #000', paddingBottom: '10px', position: 'relative' }}>
+          {/* Logo container with TM (No border) */}
+          <div style={{ position: 'relative', display: 'inline-block', marginRight: '20px' }}>
+            <div style={{ padding: '0', width: '80px', height: '80px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+              <img src="/logo.png" alt="SVAT Logo" style={{ width: '76px', height: '76px', objectFit: 'contain' }} />
+            </div>
+            <span style={{ 
+              position: 'absolute', 
+              top: '0px', 
+              right: '0px', 
+              fontSize: '0.65rem', 
+              fontWeight: 'bold', 
+              color: '#000',
+              lineHeight: '1'
+            }}>TM</span>
+          </div>
+          <div style={{ flex: 1, textAlign: 'center', marginRight: '80px' }}>
+            <h1 style={{ fontSize: '20px', fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 4px 0' }}>
+              SREE VAARAHI AMMAN TRANSPORTS
+            </h1>
+            <h2 style={{ fontSize: '13px', fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 8px 0' }}>
+              EXPERT IN EXPORT CARGO MOVERS
+            </h2>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
+              (REGULAR SERVICE TO: MUMBAI, CHENNAI, BANGALORE, TUTICORIN, COCHIN, PAN INDIA)
+            </p>
+            <p style={{ fontSize: '11px', margin: '0 0 4px 0' }}>
+              228/1, Rakkiyapalayam, Avinashi, Tirupur - 641 654.
+            </p>
+            <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
+              Contact: +91-9655237104, +91-9655235088, +91-9585907007
+            </p>
+            <p style={{ fontSize: '11px', margin: '0' }}>
+              MAIL ID. <a href="mailto:Vaarahitpt104@gmail.com" style={{ color: 'blue', textDecoration: 'underline' }}>Vaarahitpt104@gmail.com</a> , website ; <a href="http://www.sreevaarahiammantransports.com" style={{ color: 'black', textDecoration: 'none' }}>www.sreevaarahiammantransports.com</a>
+            </p>
+          </div>
         </div>
 
         {/* Title */}
@@ -157,11 +192,27 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
         </div>
 
         {/* Address */}
-        <div style={{ marginBottom: '15px', textAlign: 'center', fontSize: '12px' }}>
-          <p style={{ fontWeight: 'bold', margin: '0', textAlign: 'left' }}>To,</p>
-          <p style={{ margin: '0' }}>|</p>
-          <p style={{ margin: '0' }}>PERLI EXPORTS</p>
-          <p style={{ margin: '0' }}>TIRUPUR</p>
+        <div style={{ marginBottom: '15px', textAlign: 'left', fontSize: '12px' }}>
+          <p style={{ fontWeight: 'bold', margin: '0 0 4px 0', textAlign: 'left' }}>To,</p>
+          <textarea
+            value={toAddress}
+            onChange={(e) => setToAddress(e.target.value)}
+            placeholder="Enter Your Address"
+            rows={3}
+            style={{
+              width: '280px',
+              border: '1px dashed #ccc',
+              background: 'transparent',
+              textAlign: 'left',
+              fontWeight: 'bold',
+              fontSize: '12px',
+              outline: 'none',
+              fontFamily: '"Times New Roman", Times, serif',
+              resize: 'none',
+              padding: '4px'
+            }}
+            className="pdf-textarea"
+          />
         </div>
 
         {/* Full Load Section */}
@@ -406,9 +457,20 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
             
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: '40px', borderBottom: '1px solid #000', paddingBottom: '20px' }}>
-              <div style={{ border: '1.5px solid #000', padding: '10px', marginRight: '30px', width: '120px', height: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
-                <img src="/logo.png" alt="SVAT Logo" style={{ width: '100px', height: '100px', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
-                <span style={{ display: 'none', fontWeight: 'bold', textAlign: 'center', fontSize: '18px' }}>Logo<br/>SVAT</span>
+              <div style={{ position: 'relative', display: 'inline-block', marginRight: '30px' }}>
+                <div style={{ padding: '0', width: '120px', height: '120px', display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
+                  <img src="/logo.png" alt="SVAT Logo" style={{ width: '110px', height: '110px', objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                  <span style={{ display: 'none', fontWeight: 'bold', textAlign: 'center', fontSize: '18px' }}>Logo<br/>SVAT</span>
+                </div>
+                <span style={{ 
+                  position: 'absolute', 
+                  top: '0px', 
+                  right: '0px', 
+                  fontSize: '0.8rem', 
+                  fontWeight: 'bold', 
+                  color: '#000',
+                  lineHeight: '1'
+                }}>TM</span>
               </div>
               <div>
                 <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0', textTransform: 'uppercase' }}>SREE VAARAHI AMMAN Transports</h1>
@@ -416,6 +478,30 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
                 <p style={{ margin: '0 0 6px 0', fontSize: '16px' }}><strong>www :-</strong> www.sreevaarahiammantransports.com</p>
                 <p style={{ margin: '0', fontSize: '16px' }}><strong>mail :-</strong> Vaarahitpt104@gmail.com</p>
               </div>
+            </div>
+
+            {/* Address */}
+            <div style={{ marginBottom: '25px', textAlign: 'left', fontSize: '14px' }}>
+              <p style={{ fontWeight: 'bold', margin: '0 0 6px 0', fontSize: '16px', textAlign: 'left' }}>To,</p>
+              <textarea
+                value={toAddress}
+                onChange={(e) => setToAddress(e.target.value)}
+                placeholder="Enter Your Address"
+                rows={3}
+                style={{
+                  width: '320px',
+                  border: '1px dashed #ccc',
+                  background: 'transparent',
+                  textAlign: 'left',
+                  fontWeight: 'bold',
+                  fontSize: '14px',
+                  outline: 'none',
+                  fontFamily: '"Times New Roman", Times, serif',
+                  resize: 'none',
+                  padding: '6px'
+                }}
+                className="pdf-textarea"
+              />
             </div>
 
             {/* From / To Inputs */}

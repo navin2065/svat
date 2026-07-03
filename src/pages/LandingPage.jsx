@@ -42,7 +42,7 @@ export default function LandingPage({ onNavigate }) {
       name: 'CHENNAI OFFICE',
       zone: 'PORT LOGISTICS HUB',
       address: 'NO 45, G.N.T. ROAD, MADHAVARAM, CHENNAI - 600 110',
-      dial: '+91 95859 07007',
+      dial: '+91 9655235088',
       email: 'vaarahimsn',
       badge1: 'METRO CONSIGNMENT CENTER',
       badge2: '95 ALLOCATED LORRIES',

@@ -65,11 +65,11 @@ function App() {
               <img src="/logo.png" alt="SVAT Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
             </div>
           </div>
-          
+
           <ul className="nav-links">
             <li>
-              <button 
-                onClick={() => setPage('home')} 
+              <button
+                onClick={() => setPage('home')}
                 className={`sidebar-link ${page === 'home' ? 'active' : ''}`}
                 style={{ background: 'none', border: 'none', padding: 0, fontWeight: 500, fontSize: '0.95rem' }}
               >
@@ -120,21 +120,21 @@ function App() {
               </div>
             </div>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: '1.5' }}>
-              © {new Date().getFullYear()} Sree Vaarahi Amman Transports.<br/>All rights reserved.
+              © {new Date().getFullYear()} Sree Vaarahi Amman Transports.<br />All rights reserved.
             </p>
           </div>
           <div>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: '1rem' }}>HQ Address</h4>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6' }}>
-              228/1, Amman Nagar,<br/>
-              Rakkiyapalayam, Avinashi,<br/>
+              228/1, Amman Nagar,<br />
+              Rakkiyapalayam, Avinashi,<br />
               Tirupur - 641 654, Tamil Nadu.
             </p>
           </div>
           <div>
             <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-dark)', marginBottom: '1rem' }}>Contact Info</h4>
             <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: '1.6', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-              <span><strong>Phone:</strong> +91 96552 37104, +91 95859 07007</span>
+              <span><strong>Phone:</strong> +91 96552 37104, +91 9655235088</span>
               <span><strong>Email:</strong> Vaarahitpt104@gmail.com</span>
               <span><strong>Website:</strong> www.sreevaarahiammantransports.com</span>
             </p>
