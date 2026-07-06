@@ -20,6 +20,23 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     '', '', '', '', '', '', ''
   ]);
   const [toAddress, setToAddress] = useState('');
+  const [quotationDate, setQuotationDate] = useState(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) return dateStr;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
 
   const handleDomesticRateChange = (index, value) => {
     const newRates = [...domesticRates];
@@ -40,6 +57,20 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
       } else {
         setToAddress(loadedData.type === 'export' ? 'PERLI EXPORTS\nTIRUPUR' : '');
       }
+      if (loadedData.date) {
+        let dbDate = loadedData.date;
+        if (dbDate.includes('/')) {
+          const parts = dbDate.split('/');
+          dbDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        setQuotationDate(dbDate);
+      } else {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        setQuotationDate(`${yyyy}-${mm}-${dd}`);
+      }
     } else {
       setDeliveryCharges({
         mumbaiCbm: '',
@@ -55,6 +86,11 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
       });
       setDomesticRates(['', '', '', '', '', '', '']);
       setToAddress('');
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      setQuotationDate(`${yyyy}-${mm}-${dd}`);
     }
   }, [loadedData, type]);
 
@@ -67,7 +103,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
       type: type,
       from: type === 'domestic' ? domesticLocation.from : 'Tirupur',
       to: type === 'domestic' ? domesticLocation.to : 'Multiple (Export)',
-      date: loadedData && loadedData.date ? loadedData.date : new Date().toLocaleDateString('en-IN'),
+      date: formatDate(quotationDate),
       data: {
         deliveryCharges,
         domesticLocation,
@@ -111,6 +147,11 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     textareas.forEach(ta => {
       ta.style.border = 'none';
     });
+
+    const dateInputs = element.querySelectorAll('.pdf-date-input');
+    const dateTexts = element.querySelectorAll('.pdf-date-text');
+    dateInputs.forEach(input => input.style.display = 'none');
+    dateTexts.forEach(text => text.style.display = 'inline');
     
     const opt = {
       margin:       0.2,
@@ -124,6 +165,8 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
       textareas.forEach(ta => {
         ta.style.border = '1px dashed #ccc';
       });
+      dateInputs.forEach(input => input.style.display = 'inline');
+      dateTexts.forEach(text => text.style.display = 'none');
     });
   };
 
@@ -176,7 +219,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               228/1, Rakkiyapalayam, Avinashi, Tirupur - 641 654.
             </p>
             <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
-              Contact: +91-9655237104, +91-9655235088, +91-9585907007
+              Contact: +91-9655237104, +91-9655235088
             </p>
             <p style={{ fontSize: '11px', margin: '0' }}>
               MAIL ID. <a href="mailto:Vaarahitpt104@gmail.com" style={{ color: 'blue', textDecoration: 'underline' }}>Vaarahitpt104@gmail.com</a> , website ; <a href="http://www.sreevaarahiammantransports.com" style={{ color: 'black', textDecoration: 'none' }}>www.sreevaarahiammantransports.com</a>
@@ -191,28 +234,54 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
           </h3>
         </div>
 
-        {/* Address */}
-        <div style={{ marginBottom: '15px', textAlign: 'left', fontSize: '12px' }}>
-          <p style={{ fontWeight: 'bold', margin: '0 0 4px 0', textAlign: 'left' }}>To,</p>
-          <textarea
-            value={toAddress}
-            onChange={(e) => setToAddress(e.target.value)}
-            placeholder="Enter Your Address"
-            rows={3}
-            style={{
-              width: '280px',
-              border: '1px dashed #ccc',
-              background: 'transparent',
-              textAlign: 'left',
-              fontWeight: 'bold',
-              fontSize: '12px',
-              outline: 'none',
-              fontFamily: '"Times New Roman", Times, serif',
-              resize: 'none',
-              padding: '4px'
-            }}
-            className="pdf-textarea"
-          />
+        {/* Address & Date Flex Container */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
+          {/* Address */}
+          <div style={{ textAlign: 'left', fontSize: '12px' }}>
+            <p style={{ fontWeight: 'bold', margin: '0 0 4px 0', textAlign: 'left' }}>To,</p>
+            <textarea
+              value={toAddress}
+              onChange={(e) => setToAddress(e.target.value)}
+              placeholder="Enter Your Address"
+              rows={3}
+              style={{
+                width: '280px',
+                border: '1px dashed #ccc',
+                background: 'transparent',
+                textAlign: 'left',
+                fontWeight: 'bold',
+                fontSize: '12px',
+                outline: 'none',
+                fontFamily: '"Times New Roman", Times, serif',
+                resize: 'none',
+                padding: '4px'
+              }}
+              className="pdf-textarea"
+            />
+          </div>
+          {/* Date Picker */}
+          <div style={{ textAlign: 'right', fontSize: '12px', paddingRight: '20px' }}>
+            <label style={{ fontWeight: 'bold', marginRight: '6px', fontSize: '12px' }}>Date:</label>
+            <span className="pdf-date-text" style={{ display: 'none', fontSize: '12px', fontWeight: 'bold' }}>
+              {formatDate(quotationDate)}
+            </span>
+            <input
+              type="date"
+              value={quotationDate}
+              onChange={(e) => setQuotationDate(e.target.value)}
+              style={{
+                border: '1px dashed #ccc',
+                background: 'transparent',
+                outline: 'none',
+                fontFamily: '"Times New Roman", Times, serif',
+                fontSize: '12px',
+                fontWeight: 'bold',
+                padding: '4px',
+                width: '125px'
+              }}
+              className="pdf-textarea pdf-date-input"
+            />
+          </div>
         </div>
 
         {/* Full Load Section */}
@@ -473,35 +542,63 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
                 }}>TM</span>
               </div>
               <div>
-                <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 10px 0', textTransform: 'uppercase' }}>SREE VAARAHI AMMAN Transports</h1>
-                <p style={{ margin: '0 0 6px 0', fontSize: '16px' }}><strong>Address:-</strong> 228/1, Rakkiyapalayam, Avinashi, Tirupur - 641 654.</p>
-                <p style={{ margin: '0 0 6px 0', fontSize: '16px' }}><strong>www :-</strong> www.sreevaarahiammantransports.com</p>
-                <p style={{ margin: '0', fontSize: '16px' }}><strong>mail :-</strong> Vaarahitpt104@gmail.com</p>
+                <h1 style={{ fontSize: '24px', fontWeight: 'bold', margin: '0 0 4px 0', textTransform: 'uppercase' }}>SREE VAARAHI AMMAN Transports</h1>
+                <h2 style={{ fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 8px 0' }}>EXPERT IN DOMESTIC CARGO MOVERS</h2>
+                <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}><strong>Address:</strong> 228/1, Rakkiyapalayam, Avinashi, Tirupur - 641 654.</p>
+                <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}><strong>Contact:</strong> +91-9655237104, +91-9655235088</p>
+                <p style={{ margin: '0 0 4px 0', fontSize: '14px' }}><strong>www:</strong> www.sreevaarahiammantransports.com</p>
+                <p style={{ margin: '0', fontSize: '14px' }}><strong>mail:</strong> Vaarahitpt104@gmail.com</p>
               </div>
             </div>
 
-            {/* Address */}
-            <div style={{ marginBottom: '25px', textAlign: 'left', fontSize: '14px' }}>
-              <p style={{ fontWeight: 'bold', margin: '0 0 6px 0', fontSize: '16px', textAlign: 'left' }}>To,</p>
-              <textarea
-                value={toAddress}
-                onChange={(e) => setToAddress(e.target.value)}
-                placeholder="Enter Your Address"
-                rows={3}
-                style={{
-                  width: '320px',
-                  border: '1px dashed #ccc',
-                  background: 'transparent',
-                  textAlign: 'left',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                  outline: 'none',
-                  fontFamily: '"Times New Roman", Times, serif',
-                  resize: 'none',
-                  padding: '6px'
-                }}
-                className="pdf-textarea"
-              />
+            {/* Address & Date Flex Container */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '25px' }}>
+              {/* Address */}
+              <div style={{ textAlign: 'left', fontSize: '14px' }}>
+                <p style={{ fontWeight: 'bold', margin: '0 0 6px 0', fontSize: '16px', textAlign: 'left' }}>To,</p>
+                <textarea
+                  value={toAddress}
+                  onChange={(e) => setToAddress(e.target.value)}
+                  placeholder="Enter Your Address"
+                  rows={3}
+                  style={{
+                    width: '320px',
+                    border: '1px dashed #ccc',
+                    background: 'transparent',
+                    textAlign: 'left',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    outline: 'none',
+                    fontFamily: '"Times New Roman", Times, serif',
+                    resize: 'none',
+                    padding: '6px'
+                  }}
+                  className="pdf-textarea"
+                />
+              </div>
+              {/* Date Picker */}
+              <div style={{ textAlign: 'right', fontSize: '14px', paddingRight: '20px' }}>
+                <label style={{ fontWeight: 'bold', marginRight: '6px', fontSize: '16px' }}>Date:</label>
+                <span className="pdf-date-text" style={{ display: 'none', fontSize: '14px', fontWeight: 'bold' }}>
+                  {formatDate(quotationDate)}
+                </span>
+                <input
+                  type="date"
+                  value={quotationDate}
+                  onChange={(e) => setQuotationDate(e.target.value)}
+                  style={{
+                    border: '1px dashed #ccc',
+                    background: 'transparent',
+                    outline: 'none',
+                    fontFamily: '"Times New Roman", Times, serif',
+                    fontSize: '14px',
+                    fontWeight: 'bold',
+                    padding: '6px',
+                    width: '140px'
+                  }}
+                  className="pdf-textarea pdf-date-input"
+                />
+              </div>
             </div>
 
             {/* From / To Inputs */}

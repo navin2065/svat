@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Truck, User, Lock, ArrowRight } from 'lucide-react';
+import { Truck, User, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
 
 export default function LoginPage({ onLoginSuccess }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (username === 'munik' && password === 'munik@123') {
+    if (username === 'SVAT' && password === 'SVAT@104') {
       setError('');
       onLoginSuccess();
     } else {
@@ -57,16 +58,37 @@ export default function LoginPage({ onLoginSuccess }) {
 
           <div className="login-form-group">
             <label className="login-label">Password</label>
-            <div className="input-icon-wrapper">
+            <div className="input-icon-wrapper" style={{ position: 'relative' }}>
               <Lock className="login-input-icon" />
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 className="login-input" 
                 placeholder="Enter password"
+                style={{ paddingRight: '40px' }}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  padding: 0,
+                  color: 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
@@ -75,11 +97,6 @@ export default function LoginPage({ onLoginSuccess }) {
             <ArrowRight size={16} />
           </button>
         </form>
-
-        <div className="login-helper">
-          <p>Demo Account Credentials:</p>
-          <p>User: <span>munik</span> | Pass: <span>munik@123</span></p>
-        </div>
       </div>
     </div>
   );

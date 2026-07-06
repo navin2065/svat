@@ -266,6 +266,17 @@ const PHONE_ICON_SVG = 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy
 
 export default function LrCreator({ loadedLr = null, triggerToast = null }) {
   const [formData, setFormData] = useState(DEFAULT_LR);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) return dateStr;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
   const [signatureImage, setSignatureImage] = useState(() => {
     return localStorage.getItem('svat_signature_image') || '';
   });
@@ -305,7 +316,12 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
 
   useEffect(() => {
     if (loadedLr) {
-      setFormData(loadedLr);
+      const normalized = { ...loadedLr };
+      if (normalized.date && normalized.date.includes('/')) {
+        const parts = normalized.date.split('/');
+        normalized.date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+      setFormData(normalized);
     } else {
       setFormData(DEFAULT_LR);
     }
@@ -942,15 +958,15 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
               suggestions={getFieldSuggestions('lrNo')}
               onSelectSuggestion={(val) => handleInputChange('lrNo', val)}
             />
-            <AutocompleteInput
-              label="Date"
-              placeholder="e.g. 18/06/26"
-              maxLength={12}
-              value={formData.date}
-              onChange={(e) => handleInputChange('date', e.target.value)}
-              suggestions={getFieldSuggestions('date')}
-              onSelectSuggestion={(val) => handleInputChange('date', val)}
-            />
+            <div className="form-group">
+              <label className="form-label">Date</label>
+              <input
+                type="date"
+                className="form-input"
+                value={formData.date}
+                onChange={(e) => handleInputChange('date', e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="form-grid-2">
@@ -1694,7 +1710,7 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                                 paddingBottom: '1px',
                                 paddingLeft: '2px'
                               }}>
-                                {formData.date || '\u00A0'}
+                                {formatDate(formData.date) || '\u00A0'}
                               </span>
                             </div>
                           </div>

@@ -160,6 +160,16 @@ export default function Dashboard({ onLogout }) {
   const [isQuotationMenuOpen, setIsQuotationMenuOpen] = useState(false);
   const [isMobileQuoteMenuOpen, setIsMobileQuoteMenuOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_INVOICE);
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    if (dateStr.includes('/')) return dateStr;
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
   const [loadedLr, setLoadedLr] = useState(null);
   const [loadedQuotation, setLoadedQuotation] = useState(null);
   const [historySubTab, setHistorySubTab] = useState('dn');
@@ -503,9 +513,18 @@ export default function Dashboard({ onLogout }) {
   };
 
   const handleLoadInvoice = (historyItem) => {
+    const normalized = { ...historyItem };
+    if (normalized.date && normalized.date.includes('/')) {
+      const parts = normalized.date.split('/');
+      normalized.date = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
+    if (normalized.originalInvoiceDate && normalized.originalInvoiceDate.includes('/')) {
+      const parts = normalized.originalInvoiceDate.split('/');
+      normalized.originalInvoiceDate = `${parts[2]}-${parts[1]}-${parts[0]}`;
+    }
     setFormData({
       ...DEFAULT_INVOICE,
-      ...historyItem
+      ...normalized
     });
     setActiveTab('creator');
   };
@@ -1117,7 +1136,7 @@ export default function Dashboard({ onLogout }) {
                   <div className="form-group">
                     <label className="form-label">Dated</label>
                     <input
-                      type="text"
+                      type="date"
                       className="form-input"
                       value={formData.date}
                       onChange={(e) => handleInputChange('date', e.target.value)}
@@ -1137,7 +1156,7 @@ export default function Dashboard({ onLogout }) {
                   <div className="form-group">
                     <label className="form-label">Original Invoice Date</label>
                     <input
-                      type="text"
+                      type="date"
                       className="form-input"
                       value={formData.originalInvoiceDate}
                       onChange={(e) => handleInputChange('originalInvoiceDate', e.target.value)}
@@ -1519,15 +1538,14 @@ export default function Dashboard({ onLogout }) {
                           </div>
                           <div style={{ padding: '4px' }}>
                             <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Dated</span>
-                            <strong style={{ fontSize: '0.75rem' }}>{formData.date}</strong>
+                            <strong style={{ fontSize: '0.75rem' }}>{formatDate(formData.date)}</strong>
                           </div>
                         </div>
-
                         {/* Row 2 */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', borderBottom: '1.5px solid #000000', minHeight: '38px' }}>
                           <div style={{ borderRight: '1.5px solid #000000', padding: '4px' }}>
                             <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Original Invoice No. & Date.</span>
-                            <strong>{formData.originalInvoiceNo || ''} {formData.originalInvoiceDate ? `dt. ${formData.originalInvoiceDate}` : ''}</strong>
+                            <strong>{formData.originalInvoiceNo || ''} {formData.originalInvoiceDate ? `dt. ${formatDate(formData.originalInvoiceDate)}` : ''}</strong>
                           </div>
                           <div style={{ padding: '4px' }}>
                             <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Other References</span>
