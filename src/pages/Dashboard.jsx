@@ -27,12 +27,12 @@ const SVATLogo = () => (
         filter: 'brightness(1.2) contrast(1.1) saturate(1.15)'
       }}
     />
-    <span style={{ 
-      position: 'absolute', 
-      top: '0px', 
-      right: '0px', 
-      fontSize: '0.65rem', 
-      fontWeight: 'bold', 
+    <span style={{
+      position: 'absolute',
+      top: '0px',
+      right: '0px',
+      fontSize: '0.65rem',
+      fontWeight: 'bold',
       color: '#000000',
       lineHeight: '1'
     }}>TM</span>
@@ -146,9 +146,9 @@ const DEFAULT_INVOICE = {
   items: [
     { particulars: '', quantity: '', rate: '', per: '', amount: '' }
   ],
-  bankName: 'BANK OF BARODA',
-  bankAccount: '18930200002289',
-  bankBranch: 'TIRUPPUR MAIN & BARB0COTTON',
+  bankName: 'INDIAN OVERSEAS BANK',
+  bankAccount: '340502000000765',
+  bankBranch: 'THIRUMURUGAN POONDI, TIRUPUR-641652 & IFSC: IOBA0003405',
   bankHolderName: 'SREE VAARAHI AMMAN TRANSPORTS',
   signatoryName: '',
   gstPercentage: '',
@@ -183,14 +183,14 @@ export default function Dashboard({ onLogout }) {
     const updateScale = () => {
       if (previewContainerRef.current) {
         // Calculate available width minus some padding
-        const availableWidth = previewContainerRef.current.clientWidth - 40; 
+        const availableWidth = previewContainerRef.current.clientWidth - 40;
         const newScale = availableWidth / 794; // 794 is the invoice-preview-card width
         setPreviewScale(newScale < 1 ? newScale : 1);
       }
     };
-    
+
     updateScale();
-    setTimeout(updateScale, 100); 
+    setTimeout(updateScale, 100);
     window.addEventListener('resize', updateScale);
     return () => window.removeEventListener('resize', updateScale);
   }, [activeTab]);
@@ -708,7 +708,7 @@ export default function Dashboard({ onLogout }) {
           <span className="logo-text">SVAT</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>munik</span>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Rajesh</span>
           <div className="user-avatar-mobile">M</div>
         </div>
       </div>
@@ -819,7 +819,7 @@ export default function Dashboard({ onLogout }) {
           <div className="user-info">
             <div className="user-avatar">M</div>
             <div className="user-details">
-              <p className="user-name">munik</p>
+              <p className="user-name">Rajesh</p>
               <p className="user-role">Billing Manager</p>
             </div>
           </div>
@@ -2073,8 +2073,8 @@ export default function Dashboard({ onLogout }) {
       {/* Mobile Quote Submenu Popover */}
       {isMobileQuoteMenuOpen && (
         <>
-          <div 
-            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: 'transparent' }} 
+          <div
+            style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 999, backgroundColor: 'transparent' }}
             onClick={() => setIsMobileQuoteMenuOpen(false)}
           />
           <div style={{

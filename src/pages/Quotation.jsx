@@ -147,7 +147,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     textareas.forEach(ta => {
       ta.style.border = 'none';
     });
-
+    
     const dateInputs = element.querySelectorAll('.pdf-date-input');
     const dateTexts = element.querySelectorAll('.pdf-date-text');
     dateInputs.forEach(input => input.style.display = 'none');
@@ -222,7 +222,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               Contact: +91-9655237104, +91-9655235088
             </p>
             <p style={{ fontSize: '11px', margin: '0' }}>
-              MAIL ID. <a href="mailto:Vaarahitpt104@gmail.com" style={{ color: 'blue', textDecoration: 'underline' }}>Vaarahitpt104@gmail.com</a> , website ; <a href="http://www.sreevaarahiammantransports.com" style={{ color: 'black', textDecoration: 'none' }}>www.sreevaarahiammantransports.com</a>
+              Mail Id : <a href="mailto:vaarahitpt104@gmail.com" style={{ color: 'blue', textDecoration: 'underline' }}>Vaarahitpt104@gmail.com</a> , Website : <a href="http://www.sreevaarahiammantransports.com" style={{ color: 'black', textDecoration: 'none' }}>www.sreevaarahiammantransports.com</a>
             </p>
           </div>
         </div>
@@ -474,10 +474,8 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
       <div style={{ display: 'flex', gap: '15px', marginTop: '20px', marginBottom: '40px' }}>
         <button 
           onClick={handleSaveQuotation}
+          className="btn-outline"
           style={{ 
-            backgroundColor: '#28A745', 
-            color: 'white', 
-            border: 'none', 
             padding: '12px 24px', 
             borderRadius: '6px', 
             cursor: 'pointer',
@@ -485,22 +483,16 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontWeight: 'bold',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            transition: 'background-color 0.2s'
+            fontWeight: 'bold'
           }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#218838'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#28A745'}
         >
           <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>✓</span>
           Save Quotation
         </button>
         <button 
           onClick={() => handleDownloadPDF('quotation-content', 'SVAT_Rate_Quotation.pdf')} 
+          className="btn-primary"
           style={{ 
-            backgroundColor: '#007BFF', 
-            color: 'white', 
-            border: 'none', 
             padding: '12px 24px', 
             borderRadius: '6px', 
             cursor: 'pointer',
@@ -508,12 +500,8 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
             display: 'flex',
             alignItems: 'center',
             gap: '8px',
-            fontWeight: 'bold',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-            transition: 'background-color 0.2s'
+            fontWeight: 'bold'
           }}
-          onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0056b3'}
-          onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#007BFF'}
         >
           <Download size={20} />
           Download PDF
@@ -601,7 +589,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               </div>
             </div>
 
-            {/* From / To Inputs */}
+            
             <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '40px', fontSize: '18px', fontWeight: 'bold' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <span>From</span>
@@ -623,7 +611,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               </div>
             </div>
 
-            {/* Domestic Table */}
+            
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 'auto', textAlign: 'center', fontSize: '16px' }}>
               <thead>
                 <tr>
@@ -678,10 +666,8 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
           <div style={{ display: 'flex', gap: '15px', marginTop: '20px', marginBottom: '40px' }}>
             <button 
               onClick={handleSaveQuotation}
+              className="btn-outline"
               style={{ 
-                backgroundColor: '#28A745', 
-                color: 'white', 
-                border: 'none', 
                 padding: '12px 24px', 
                 borderRadius: '6px', 
                 cursor: 'pointer',
@@ -689,22 +675,16 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                fontWeight: 'bold',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                transition: 'background-color 0.2s'
+                fontWeight: 'bold'
               }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#218838'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#28A745'}
             >
               <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>✓</span>
               Save Quotation
             </button>
             <button 
               onClick={() => handleDownloadPDF('domestic-quotation-content', 'SVAT_Domestic_Quotation.pdf')} 
+              className="btn-primary"
               style={{ 
-                backgroundColor: '#007BFF', 
-                color: 'white', 
-                border: 'none', 
                 padding: '12px 24px', 
                 borderRadius: '6px', 
                 cursor: 'pointer',
@@ -712,12 +692,8 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
                 display: 'flex',
                 alignItems: 'center',
                 gap: '8px',
-                fontWeight: 'bold',
-                boxShadow: '0 4px 6px rgba(0,0,0,0.1)',
-                transition: 'background-color 0.2s'
+                fontWeight: 'bold'
               }}
-              onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0056b3'}
-              onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#007BFF'}
             >
               <Download size={20} />
               Download PDF
@@ -728,5 +704,4 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     </div>
   );
 };
-
 export default Quotation;
