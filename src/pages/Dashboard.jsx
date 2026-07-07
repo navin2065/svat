@@ -1121,31 +1121,11 @@ export default function Dashboard({ onLogout }) {
                   </div>
                 </div>
 
-                {/* Debit Note Details */}
+                {/* Document Details */}
                 <h4 className="form-section-title">Invoice / Document Details</h4>
                 <div className="form-grid-2">
                   <div className="form-group">
-                    <label className="form-label">Debit Note No / Invoice No</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.debitNoteNo}
-                      onChange={(e) => handleInputChange('debitNoteNo', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Dated</label>
-                    <input
-                      type="date"
-                      className="form-input"
-                      value={formData.date}
-                      onChange={(e) => handleInputChange('date', e.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Original Invoice No</label>
+                    <label className="form-label">Invoice No</label>
                     <input
                       type="text"
                       className="form-input"
@@ -1154,12 +1134,32 @@ export default function Dashboard({ onLogout }) {
                     />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Original Invoice Date</label>
+                    <label className="form-label">Invoice Date</label>
                     <input
                       type="date"
                       className="form-input"
                       value={formData.originalInvoiceDate}
                       onChange={(e) => handleInputChange('originalInvoiceDate', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-grid-2">
+                  <div className="form-group">
+                    <label className="form-label">Debit Note No</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={formData.debitNoteNo}
+                      onChange={(e) => handleInputChange('debitNoteNo', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Debit Note Date</label>
+                    <input
+                      type="date"
+                      className="form-input"
+                      value={formData.date}
+                      onChange={(e) => handleInputChange('date', e.target.value)}
                     />
                   </div>
                 </div>
@@ -1533,23 +1533,27 @@ export default function Dashboard({ onLogout }) {
                         {/* Row 1 */}
                         <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', borderBottom: '1.5px solid #000000', minHeight: '38px' }}>
                           <div style={{ borderRight: '1.5px solid #000000', padding: '4px' }}>
-                            <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Debit Note No.</span>
-                            <strong style={{ fontSize: '0.75rem' }}>{formData.debitNoteNo}</strong>
-                          </div>
-                          <div style={{ padding: '4px' }}>
-                            <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Dated</span>
-                            <strong style={{ fontSize: '0.75rem' }}>{formatDate(formData.date)}</strong>
-                          </div>
-                        </div>
-                        {/* Row 2 */}
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', borderBottom: '1.5px solid #000000', minHeight: '38px' }}>
-                          <div style={{ borderRight: '1.5px solid #000000', padding: '4px' }}>
-                            <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Original Invoice No. & Date.</span>
-                            <strong>{formData.originalInvoiceNo || ''} {formData.originalInvoiceDate ? `dt. ${formatDate(formData.originalInvoiceDate)}` : ''}</strong>
+                            <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Invoice No. & Date</span>
+                            <strong style={{ fontSize: '0.75rem' }}>
+                              {formData.originalInvoiceNo || ''} {formData.originalInvoiceDate ? `dt. ${formatDate(formData.originalInvoiceDate)}` : ''}
+                            </strong>
                           </div>
                           <div style={{ padding: '4px' }}>
                             <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Other References</span>
                             <strong>{formData.otherRefs || ''}</strong>
+                          </div>
+                        </div>
+
+                        {/* Row 2 */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr', borderBottom: '1.5px solid #000000', minHeight: '38px' }}>
+                          <div style={{ borderRight: '1.5px solid #000000', padding: '4px' }}>
+                            <span style={{ display: 'block', fontSize: '0.6rem', color: '#555' }}>Debit Note No. & Date</span>
+                            <strong style={{ fontSize: '0.75rem' }}>
+                              {formData.debitNoteNo || ''} {formData.date ? `dt. ${formatDate(formData.date)}` : ''}
+                            </strong>
+                          </div>
+                          <div style={{ padding: '4px' }}>
+                            <strong>&nbsp;</strong>
                           </div>
                         </div>
 
