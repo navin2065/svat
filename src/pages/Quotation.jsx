@@ -1,7 +1,172 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Download } from 'lucide-react';
 import { db } from '../firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, onSnapshot } from 'firebase/firestore';
+
+// Autocomplete suggestions dropdown element
+const SuggestionsDropdown = ({ query, list, onSelect, onClose }) => {
+  const queryClean = (query || '').toString().toLowerCase().trim();
+  
+  const filtered = list.filter(val => {
+    if (!val) return false;
+    const valLower = val.toString().toLowerCase();
+    if (!queryClean) return true; // show all when query is empty
+    return valLower.includes(queryClean) && valLower !== queryClean;
+  });
+
+  const visibleList = filtered.slice(0, 15);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) {
+        return;
+      }
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      onClose();
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [onClose]);
+
+  if (visibleList.length === 0) return null;
+
+  return (
+    <ul ref={dropdownRef} style={{
+      position: 'absolute',
+      top: '100%',
+      left: 0,
+      right: 0,
+      backgroundColor: '#FFFFFF',
+      border: '1px solid rgba(0, 0, 0, 0.1)',
+      borderRadius: '4px',
+      maxHeight: '150px',
+      overflowY: 'auto',
+      zIndex: 1000,
+      listStyle: 'none',
+      margin: 0,
+      padding: 0,
+      boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)',
+      textAlign: 'left'
+    }}>
+      {visibleList.map((val, idx) => (
+        <li
+          key={idx}
+          style={{
+            padding: '8px 12px',
+            cursor: 'pointer',
+            fontSize: '0.85rem',
+            color: '#000000',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
+            transition: 'background-color 0.2s',
+            fontWeight: 'normal'
+          }}
+          onMouseDown={(e) => {
+            e.preventDefault();
+            onSelect(val);
+          }}
+          onMouseEnter={(e) => e.target.style.backgroundColor = 'rgba(241, 180, 0, 0.15)'}
+          onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+        >
+          {val}
+        </li>
+      ))}
+    </ul>
+  );
+};
+
+const AutocompleteInlineInput = ({
+  value,
+  onChange,
+  suggestions,
+  style = {}
+}) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <input
+        type="text"
+        value={value}
+        onChange={onChange}
+        onFocus={() => setShowSuggestions(true)}
+        style={style}
+      />
+      {showSuggestions && (
+        <SuggestionsDropdown
+          query={value}
+          list={suggestions}
+          onSelect={(val) => {
+            onChange({ target: { value: val } });
+            setShowSuggestions(false);
+          }}
+          onClose={() => setShowSuggestions(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+const AutocompleteInlineTextarea = ({
+  value,
+  onChange,
+  suggestions,
+  rows = 3,
+  placeholder,
+  style = {},
+  className = ""
+}) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', display: 'inline-block' }}>
+      <textarea
+        rows={rows}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        onFocus={() => setShowSuggestions(true)}
+        style={style}
+        className={className}
+      />
+      {showSuggestions && (
+        <SuggestionsDropdown
+          query={value}
+          list={suggestions}
+          onSelect={(val) => {
+            onChange({ target: { value: val } });
+            setShowSuggestions(false);
+          }}
+          onClose={() => setShowSuggestions(false)}
+        />
+      )}
+    </div>
+  );
+};
 
 const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) => {
   const [deliveryCharges, setDeliveryCharges] = useState({
@@ -27,6 +192,74 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     const dd = String(today.getDate()).padStart(2, '0');
     return `${yyyy}-${mm}-${dd}`;
   });
+
+  const [suggestionsRegistry, setSuggestionsRegistry] = useState(() => {
+    const saved = localStorage.getItem('svat_suggestions_registry');
+    return saved ? JSON.parse(saved) : {
+      cities: ['Tirupur', 'Mumbai', 'Chennai', 'Bangalore', 'Tuticorin', 'Cochin', 'Pollachi', 'Hyderabad', 'Delhi'],
+      consignees: [],
+      addresses: [],
+      gsts: ['33RSPPS1745J1ZU'],
+      states: ['Tamil Nadu, Code: 33'],
+      vessels: [],
+      otherRefs: ['LR COPY'],
+      banks: ['INDIAN OVERSEAS BANK'],
+      accounts: ['340502000000765'],
+      branches: ['THIRUMURUGAN POONDI, TIRUPUR-641652 & IFSC: IOBA0003405'],
+      holders: ['SREE VAARAHI AMMAN TRANSPORTS'],
+      toAddresses: []
+    };
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'suggestions', 'registry'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setSuggestionsRegistry(prev => {
+          const merged = { ...prev, ...data };
+          localStorage.setItem('svat_suggestions_registry', JSON.stringify(merged));
+          return merged;
+        });
+      }
+    }, (error) => {
+      console.error("Firestore registry suggestions listener error:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const saveToRegistry = async (updates) => {
+    let changed = false;
+    const current = { ...suggestionsRegistry };
+
+    Object.keys(updates).forEach(key => {
+      if (Array.isArray(updates[key])) {
+        const cleanUpdates = updates[key]
+          .map(val => (val || '').toString().trim())
+          .filter(val => val.length > 0);
+
+        const existingList = current[key] || [];
+        const mergedList = [...existingList];
+        
+        cleanUpdates.forEach(item => {
+          if (!mergedList.includes(item)) {
+            mergedList.push(item);
+            changed = true;
+          }
+        });
+        current[key] = mergedList;
+      }
+    });
+
+    if (changed) {
+      setSuggestionsRegistry(current);
+      localStorage.setItem('svat_suggestions_registry', JSON.stringify(current));
+      try {
+        await setDoc(doc(db, 'suggestions', 'registry'), current);
+      } catch (err) {
+        console.error("Error saving registry suggestions to Firestore:", err);
+      }
+    }
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -137,9 +370,27 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
         alert('Quotation saved locally!');
       }
     }
+
+    // Save fields to registry on save
+    const updates = {
+      toAddresses: [toAddress]
+    };
+    if (type === 'domestic') {
+      updates.cities = [domesticLocation.from, domesticLocation.to];
+    }
+    saveToRegistry(updates);
   };
 
   const handleDownloadPDF = (contentId, filename) => {
+    // Save fields to registry on download
+    const updates = {
+      toAddresses: [toAddress]
+    };
+    if (type === 'domestic') {
+      updates.cities = [domesticLocation.from, domesticLocation.to];
+    }
+    saveToRegistry(updates);
+
     const element = document.getElementById(contentId);
     if (!element) return;
     
@@ -239,11 +490,12 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
           {/* Address */}
           <div style={{ textAlign: 'left', fontSize: '12px' }}>
             <p style={{ fontWeight: 'bold', margin: '0 0 4px 0', textAlign: 'left' }}>To,</p>
-            <textarea
+            <AutocompleteInlineTextarea
               value={toAddress}
               onChange={(e) => setToAddress(e.target.value)}
               placeholder="Enter Your Address"
               rows={3}
+              suggestions={suggestionsRegistry.toAddresses}
               style={{
                 width: '280px',
                 border: '1px dashed #ccc',
@@ -544,11 +796,12 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               {/* Address */}
               <div style={{ textAlign: 'left', fontSize: '14px' }}>
                 <p style={{ fontWeight: 'bold', margin: '0 0 6px 0', fontSize: '16px', textAlign: 'left' }}>To,</p>
-                <textarea
+                <AutocompleteInlineTextarea
                   value={toAddress}
                   onChange={(e) => setToAddress(e.target.value)}
                   placeholder="Enter Your Address"
                   rows={3}
+                  suggestions={suggestionsRegistry.toAddresses}
                   style={{
                     width: '320px',
                     border: '1px dashed #ccc',
@@ -593,19 +846,19 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
             <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '40px', fontSize: '18px', fontWeight: 'bold' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <span>From</span>
-                <input 
-                  type="text" 
+                <AutocompleteInlineInput 
                   value={domesticLocation.from} 
                   onChange={(e) => setDomesticLocation({...domesticLocation, from: e.target.value})}
+                  suggestions={suggestionsRegistry.cities}
                   style={{ border: '1px solid #000', padding: '6px 12px', outline: 'none', width: '200px', fontFamily: '"Times New Roman", Times, serif', fontSize: '18px', fontWeight: 'bold' }} 
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
                 <span>To</span>
-                <input 
-                  type="text" 
+                <AutocompleteInlineInput 
                   value={domesticLocation.to} 
                   onChange={(e) => setDomesticLocation({...domesticLocation, to: e.target.value})}
+                  suggestions={suggestionsRegistry.cities}
                   style={{ border: '1px solid #000', padding: '6px 12px', outline: 'none', width: '200px', fontFamily: '"Times New Roman", Times, serif', fontSize: '18px', fontWeight: 'bold' }} 
                 />
               </div>

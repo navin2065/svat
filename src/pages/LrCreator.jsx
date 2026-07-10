@@ -4,12 +4,15 @@ import { db } from '../firebase';
 import { doc, setDoc, onSnapshot } from 'firebase/firestore';
 
 // Suggestions Dropdown component with prefix-first sorting
-const SuggestionsDropdown = ({ query, list, onSelect }) => {
-  const lowerQuery = (query || '').toLowerCase();
-  const filtered = list.filter(val => 
-    val.toLowerCase().includes(lowerQuery) && 
-    val.toLowerCase() !== lowerQuery
-  ).sort((a, b) => {
+const SuggestionsDropdown = ({ query, list, onSelect, onClose }) => {
+  const lowerQuery = (query || '').toString().toLowerCase().trim();
+  const filtered = list.filter(val => {
+    if (!val) return false;
+    const valLower = val.toString().toLowerCase();
+    if (!lowerQuery) return true; // show all when query is empty
+    return valLower.includes(lowerQuery) && valLower !== lowerQuery;
+  }).sort((a, b) => {
+    if (!lowerQuery) return a.localeCompare(b);
     const aLower = a.toLowerCase();
     const bLower = b.toLowerCase();
     const aStarts = aLower.startsWith(lowerQuery);
@@ -19,10 +22,27 @@ const SuggestionsDropdown = ({ query, list, onSelect }) => {
     return a.localeCompare(b);
   });
 
-  if (filtered.length === 0) return null;
+  const visibleList = filtered.slice(0, 15);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) {
+        return;
+      }
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      if (onClose) onClose();
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [onClose]);
+
+  if (visibleList.length === 0) return null;
 
   return (
-    <ul className="suggestions-dropdown-list" style={{
+    <ul ref={dropdownRef} className="suggestions-dropdown-list" style={{
       position: 'absolute',
       top: '100%',
       left: 0,
@@ -38,7 +58,7 @@ const SuggestionsDropdown = ({ query, list, onSelect }) => {
       padding: 0,
       boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)'
     }}>
-      {filtered.map((val, idx) => (
+      {visibleList.map((val, idx) => (
         <li 
           key={idx}
           style={{
@@ -362,7 +382,6 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
     return () => observer.disconnect();
   }, []);
 
-  // Suggestions history for Goods Description
   const [goodsHistory, setGoodsHistory] = useState(() => {
     const saved = localStorage.getItem('svat_goods_history');
     return saved ? JSON.parse(saved) : [
@@ -390,11 +409,94 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
     return () => unsubscribe();
   }, []);
 
+  const [suggestionsRegistry, setSuggestionsRegistry] = useState(() => {
+    const saved = localStorage.getItem('svat_suggestions_registry');
+    return saved ? JSON.parse(saved) : {
+      cities: ['Tirupur', 'Mumbai', 'Chennai', 'Bangalore', 'Tuticorin', 'Cochin', 'Pollachi', 'Hyderabad', 'Delhi'],
+      consignees: [],
+      addresses: [],
+      gsts: ['33RSPPS1745J1ZU'],
+      states: ['Tamil Nadu, Code: 33'],
+      vessels: [],
+      otherRefs: ['LR COPY'],
+      banks: ['INDIAN OVERSEAS BANK'],
+      accounts: ['340502000000765'],
+      branches: ['THIRUMURUGAN POONDI, TIRUPUR-641652 & IFSC: IOBA0003405'],
+      holders: ['SREE VAARAHI AMMAN TRANSPORTS'],
+      toAddresses: []
+    };
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'suggestions', 'registry'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setSuggestionsRegistry(prev => {
+          const merged = { ...prev, ...data };
+          localStorage.setItem('svat_suggestions_registry', JSON.stringify(merged));
+          return merged;
+        });
+      }
+    }, (error) => {
+      console.error("Firestore registry suggestions listener error:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const saveToRegistry = async (updates) => {
+    let changed = false;
+    const current = { ...suggestionsRegistry };
+
+    Object.keys(updates).forEach(key => {
+      if (Array.isArray(updates[key])) {
+        const cleanUpdates = updates[key]
+          .map(val => (val || '').toString().trim())
+          .filter(val => val.length > 0);
+
+        const existingList = current[key] || [];
+        const mergedList = [...existingList];
+        
+        cleanUpdates.forEach(item => {
+          if (!mergedList.includes(item)) {
+            mergedList.push(item);
+            changed = true;
+          }
+        });
+        current[key] = mergedList;
+      }
+    });
+
+    if (changed) {
+      setSuggestionsRegistry(current);
+      localStorage.setItem('svat_suggestions_registry', JSON.stringify(current));
+      try {
+        await setDoc(doc(db, 'suggestions', 'registry'), current);
+      } catch (err) {
+        console.error("Error saving registry suggestions to Firestore:", err);
+      }
+    }
+  };
+
   const [savedLrs, setSavedLrs] = useState(() => {
     return JSON.parse(localStorage.getItem('svat_saved_lrs') || '[]');
   });
 
   const getFieldSuggestions = (fieldName) => {
+    if (fieldName === 'from' || fieldName === 'to') {
+      return suggestionsRegistry.cities;
+    }
+    if (fieldName === 'consignorName' || fieldName === 'consigneeName') {
+      return suggestionsRegistry.consignees;
+    }
+    if (fieldName === 'consignorAddress' || fieldName === 'consigneeAddress') {
+      return suggestionsRegistry.addresses;
+    }
+    if (fieldName === 'consignorGst' || fieldName === 'consigneeGst') {
+      return suggestionsRegistry.gsts;
+    }
+    if (fieldName === 'truckNo') {
+      return suggestionsRegistry.vessels;
+    }
     const values = savedLrs.map(lr => {
       if (fieldName.startsWith('charges.')) {
         const subField = fieldName.split('.')[1];
@@ -570,6 +672,15 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
       to: formData.to,
       createdAt: Date.now()
     };
+
+    // Save fields to registry on save
+    saveToRegistry({
+      cities: [formData.from, formData.to],
+      consignees: [formData.consignorName, formData.consigneeName],
+      addresses: [formData.consignorAddress, formData.consigneeAddress],
+      gsts: [formData.consignorGst, formData.consigneeGst],
+      vessels: [formData.truckNo]
+    });
     
     try {
       await setDoc(doc(db, 'lorry_receipts', newLrEntry.id), newLrEntry);
@@ -610,6 +721,15 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
   };
 
   const handleDownloadPDF = () => {
+    // Save fields to registry on download
+    saveToRegistry({
+      cities: [formData.from, formData.to],
+      consignees: [formData.consignorName, formData.consigneeName],
+      addresses: [formData.consignorAddress, formData.consigneeAddress],
+      gsts: [formData.consignorGst, formData.consigneeGst],
+      vessels: [formData.truckNo]
+    });
+
     // Save suggestions first
     const currentGoods = (formData.cargoItems?.[0]?.goodsDescription || '').trim();
     if (currentGoods && !goodsHistory.includes(currentGoods)) {

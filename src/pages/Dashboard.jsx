@@ -62,22 +62,36 @@ const numberToWords = (num) => {
 
 // Autocomplete suggestions dropdown element
 const SuggestionsDropdown = ({ query, list, onSelect, onClose }) => {
-  const filtered = list.filter(val =>
-    val.toLowerCase().includes((query || '').toLowerCase()) && val.toLowerCase() !== (query || '').toLowerCase()
-  );
+  const queryClean = (query || '').toString().toLowerCase().trim();
+  
+  const filtered = list.filter(val => {
+    if (!val) return false;
+    const valLower = val.toString().toLowerCase();
+    if (!queryClean) return true; // show all when query is empty
+    return valLower.includes(queryClean) && valLower !== queryClean;
+  });
+
+  const visibleList = filtered.slice(0, 15);
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
-    const handleOutsideClick = () => {
-      setTimeout(onClose, 200);
+    const handleOutsideClick = (e) => {
+      if (dropdownRef.current && dropdownRef.current.contains(e.target)) {
+        return;
+      }
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      onClose();
     };
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, [onClose]);
 
-  if (filtered.length === 0) return null;
+  if (visibleList.length === 0) return null;
 
   return (
-    <ul style={{
+    <ul ref={dropdownRef} className="suggestions-dropdown-list" style={{
       position: 'absolute',
       top: '100%',
       left: 0,
@@ -85,15 +99,15 @@ const SuggestionsDropdown = ({ query, list, onSelect, onClose }) => {
       backgroundColor: '#FFFFFF',
       border: '1px solid rgba(0, 0, 0, 0.1)',
       borderRadius: '12px',
-      maxHeight: '150px',
+      maxHeight: '180px',
       overflowY: 'auto',
-      zIndex: 50,
+      zIndex: 100,
       listStyle: 'none',
       margin: 0,
       padding: 0,
       boxShadow: '0 10px 30px rgba(0, 0, 0, 0.08)'
     }}>
-      {filtered.map((val, idx) => (
+      {visibleList.map((val, idx) => (
         <li
           key={idx}
           style={{
@@ -102,7 +116,9 @@ const SuggestionsDropdown = ({ query, list, onSelect, onClose }) => {
             fontSize: '0.85rem',
             color: 'var(--text-dark)',
             borderBottom: '1px solid rgba(0, 0, 0, 0.05)',
-            transition: 'background-color 0.2s'
+            transition: 'background-color 0.2s',
+            textAlign: 'left',
+            fontWeight: 'normal'
           }}
           onMouseDown={(e) => {
             e.preventDefault(); // Prevents textbox blur from closing this list prematurely
@@ -115,6 +131,109 @@ const SuggestionsDropdown = ({ query, list, onSelect, onClose }) => {
         </li>
       ))}
     </ul>
+  );
+};
+
+const AutocompleteInput = ({
+  label,
+  type = 'text',
+  placeholder,
+  value,
+  onChange,
+  suggestions,
+  onSelectSuggestion,
+  style = {}
+}) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="form-group" style={style}>
+      {label && <label className="form-label">{label}</label>}
+      <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+        <input
+          type={type}
+          className="form-input"
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setShowSuggestions(true)}
+        />
+        {showSuggestions && (
+          <SuggestionsDropdown
+            query={value}
+            list={suggestions}
+            onSelect={(val) => {
+              onSelectSuggestion(val);
+              setShowSuggestions(false);
+            }}
+            onClose={() => setShowSuggestions(false)}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
+const AutocompleteTextarea = ({
+  label,
+  placeholder,
+  rows = 2,
+  value,
+  onChange,
+  suggestions,
+  onSelectSuggestion,
+  style = {}
+}) => {
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const wrapperRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <div className="form-group" style={style}>
+      {label && <label className="form-label">{label}</label>}
+      <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+        <textarea
+          rows={rows}
+          className="form-input"
+          placeholder={placeholder}
+          value={value}
+          onChange={onChange}
+          onFocus={() => setShowSuggestions(true)}
+          style={{ resize: 'vertical' }}
+        />
+        {showSuggestions && (
+          <SuggestionsDropdown
+            query={value}
+            list={suggestions}
+            onSelect={(val) => {
+              onSelectSuggestion(val);
+              setShowSuggestions(false);
+            }}
+            onClose={() => setShowSuggestions(false)}
+          />
+        )}
+      </div>
+    </div>
   );
 };
 
@@ -315,6 +434,75 @@ export default function Dashboard({ onLogout }) {
     return () => unsubscribe();
   }, []);
   const [activeRowIdx, setActiveRowIdx] = useState(null);
+  const [suggestionsRegistry, setSuggestionsRegistry] = useState(() => {
+    const saved = localStorage.getItem('svat_suggestions_registry');
+    return saved ? JSON.parse(saved) : {
+      cities: ['Tirupur', 'Mumbai', 'Chennai', 'Bangalore', 'Tuticorin', 'Cochin', 'Pollachi', 'Hyderabad', 'Delhi'],
+      consignees: [],
+      addresses: [],
+      gsts: ['33RSPPS1745J1ZU'],
+      states: ['Tamil Nadu, Code: 33'],
+      vessels: [],
+      otherRefs: ['LR COPY'],
+      banks: ['INDIAN OVERSEAS BANK'],
+      accounts: ['340502000000765'],
+      branches: ['THIRUMURUGAN POONDI, TIRUPUR-641652 & IFSC: IOBA0003405'],
+      holders: ['SREE VAARAHI AMMAN TRANSPORTS'],
+      toAddresses: [],
+      invoices: [],
+      debitNotes: []
+    };
+  });
+
+  useEffect(() => {
+    const unsubscribe = onSnapshot(doc(db, 'suggestions', 'registry'), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        setSuggestionsRegistry(prev => {
+          const merged = { ...prev, ...data };
+          localStorage.setItem('svat_suggestions_registry', JSON.stringify(merged));
+          return merged;
+        });
+      }
+    }, (error) => {
+      console.error("Firestore registry suggestions listener error:", error);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  const saveToRegistry = async (updates) => {
+    let changed = false;
+    const current = { ...suggestionsRegistry };
+
+    Object.keys(updates).forEach(key => {
+      if (Array.isArray(updates[key])) {
+        const cleanUpdates = updates[key]
+          .map(val => (val || '').toString().trim())
+          .filter(val => val.length > 0);
+
+        const existingList = current[key] || [];
+        const mergedList = [...existingList];
+        
+        cleanUpdates.forEach(item => {
+          if (!mergedList.includes(item)) {
+            mergedList.push(item);
+            changed = true;
+          }
+        });
+        current[key] = mergedList;
+      }
+    });
+
+    if (changed) {
+      setSuggestionsRegistry(current);
+      localStorage.setItem('svat_suggestions_registry', JSON.stringify(current));
+      try {
+        await setDoc(doc(db, 'suggestions', 'registry'), current);
+      } catch (err) {
+        console.error("Error saving registry suggestions to Firestore:", err);
+      }
+    }
+  };
 
   // Re-calculate totals, GST, and words dynamically (sanitizing commas/symbols)
   useEffect(() => {
@@ -483,11 +671,45 @@ export default function Dashboard({ onLogout }) {
         console.error("Error saving suggestions to Firestore:", err);
       }
     }
+
+    // Save newly entered fields to suggestions registry
+    saveToRegistry({
+      cities: [formData.placeOfReceipt, formData.portOfLoading, formData.portOfDischarge],
+      consignees: [formData.consigneeName],
+      addresses: [formData.consigneeAddress],
+      gsts: [formData.consigneeGst],
+      states: [formData.consigneeState],
+      vessels: [formData.vesselFlightNo],
+      otherRefs: [formData.otherRefs],
+      banks: [formData.bankName],
+      accounts: [formData.bankAccount],
+      branches: [formData.bankBranch],
+      holders: [formData.bankHolderName],
+      invoices: [formData.originalInvoiceNo],
+      debitNotes: [formData.debitNoteNo]
+    });
   };
 
   const handleDownloadPDF = () => {
     const element = document.querySelector('.invoice-preview-card');
     if (!element) return;
+
+    // Save newly entered fields to suggestions registry on download
+    saveToRegistry({
+      cities: [formData.placeOfReceipt, formData.portOfLoading, formData.portOfDischarge],
+      consignees: [formData.consigneeName],
+      addresses: [formData.consigneeAddress],
+      gsts: [formData.consigneeGst],
+      states: [formData.consigneeState],
+      vessels: [formData.vesselFlightNo],
+      otherRefs: [formData.otherRefs],
+      banks: [formData.bankName],
+      accounts: [formData.bankAccount],
+      branches: [formData.bankBranch],
+      holders: [formData.bankHolderName],
+      invoices: [formData.originalInvoiceNo],
+      debitNotes: [formData.debitNoteNo]
+    });
 
     // Replace slashes with underscores for safe filename
     const filename = `${(formData.debitNoteNo || 'invoice').replace(/\//g, '_')}.pdf`;
@@ -1082,57 +1304,48 @@ export default function Dashboard({ onLogout }) {
 
                 {/* Consignee */}
                 <h4 className="form-section-title">Consignee (Buyer / Bill To)</h4>
-                <div className="form-group">
-                  <label className="form-label">Consignee Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.consigneeName}
-                    onChange={(e) => handleInputChange('consigneeName', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Consignee Address</label>
-                  <textarea
-                    rows={2}
-                    className="form-input"
-                    value={formData.consigneeAddress}
-                    onChange={(e) => handleInputChange('consigneeAddress', e.target.value)}
-                  />
-                </div>
+                <AutocompleteInput
+                  label="Consignee Name"
+                  value={formData.consigneeName}
+                  onChange={(e) => handleInputChange('consigneeName', e.target.value)}
+                  suggestions={suggestionsRegistry.consignees}
+                  onSelectSuggestion={(val) => handleInputChange('consigneeName', val)}
+                />
+                <AutocompleteTextarea
+                  label="Consignee Address"
+                  rows={2}
+                  value={formData.consigneeAddress}
+                  onChange={(e) => handleInputChange('consigneeAddress', e.target.value)}
+                  suggestions={suggestionsRegistry.addresses}
+                  onSelectSuggestion={(val) => handleInputChange('consigneeAddress', val)}
+                />
                 <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">GSTIN / UIN</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.consigneeGst}
-                      onChange={(e) => handleInputChange('consigneeGst', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">State & Code</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.consigneeState}
-                      onChange={(e) => handleInputChange('consigneeState', e.target.value)}
-                    />
-                  </div>
+                  <AutocompleteInput
+                    label="GSTIN / UIN"
+                    value={formData.consigneeGst}
+                    onChange={(e) => handleInputChange('consigneeGst', e.target.value)}
+                    suggestions={suggestionsRegistry.gsts}
+                    onSelectSuggestion={(val) => handleInputChange('consigneeGst', val)}
+                  />
+                  <AutocompleteInput
+                    label="State & Code"
+                    value={formData.consigneeState}
+                    onChange={(e) => handleInputChange('consigneeState', e.target.value)}
+                    suggestions={suggestionsRegistry.states}
+                    onSelectSuggestion={(val) => handleInputChange('consigneeState', val)}
+                  />
                 </div>
 
                 {/* Document Details */}
                 <h4 className="form-section-title">Invoice / Document Details</h4>
-                <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Invoice No</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.originalInvoiceNo}
-                      onChange={(e) => handleInputChange('originalInvoiceNo', e.target.value)}
-                    />
-                  </div>
+                 <div className="form-grid-2">
+                  <AutocompleteInput
+                    label="Invoice No"
+                    value={formData.originalInvoiceNo}
+                    onChange={(e) => handleInputChange('originalInvoiceNo', e.target.value)}
+                    suggestions={suggestionsRegistry.invoices || []}
+                    onSelectSuggestion={(val) => handleInputChange('originalInvoiceNo', val)}
+                  />
                   <div className="form-group">
                     <label className="form-label">Invoice Date</label>
                     <input
@@ -1144,15 +1357,13 @@ export default function Dashboard({ onLogout }) {
                   </div>
                 </div>
                 <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Debit Note No</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.debitNoteNo}
-                      onChange={(e) => handleInputChange('debitNoteNo', e.target.value)}
-                    />
-                  </div>
+                  <AutocompleteInput
+                    label="Debit Note No"
+                    value={formData.debitNoteNo}
+                    onChange={(e) => handleInputChange('debitNoteNo', e.target.value)}
+                    suggestions={suggestionsRegistry.debitNotes || []}
+                    onSelectSuggestion={(val) => handleInputChange('debitNoteNo', val)}
+                  />
                   <div className="form-group">
                     <label className="form-label">Debit Note Date</label>
                     <input
@@ -1163,15 +1374,13 @@ export default function Dashboard({ onLogout }) {
                     />
                   </div>
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Other References</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.otherRefs}
-                    onChange={(e) => handleInputChange('otherRefs', e.target.value)}
-                  />
-                </div>
+                <AutocompleteInput
+                  label="Other References"
+                  value={formData.otherRefs}
+                  onChange={(e) => handleInputChange('otherRefs', e.target.value)}
+                  suggestions={suggestionsRegistry.otherRefs}
+                  onSelectSuggestion={(val) => handleInputChange('otherRefs', val)}
+                />
 
                 {/* Tax Setup */}
                 <h4 className="form-section-title">GST settings</h4>
@@ -1212,44 +1421,36 @@ export default function Dashboard({ onLogout }) {
                 {/* Transport Cargo */}
                 <h4 className="form-section-title">Transport & Shipment Details</h4>
                 <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Vessel / Flight / Truck No</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.vesselFlightNo}
-                      onChange={(e) => handleInputChange('vesselFlightNo', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Place of Receipt by Shipper</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.placeOfReceipt}
-                      onChange={(e) => handleInputChange('placeOfReceipt', e.target.value)}
-                    />
-                  </div>
+                  <AutocompleteInput
+                    label="Vessel / Flight / Truck No"
+                    value={formData.vesselFlightNo}
+                    onChange={(e) => handleInputChange('vesselFlightNo', e.target.value)}
+                    suggestions={suggestionsRegistry.vessels}
+                    onSelectSuggestion={(val) => handleInputChange('vesselFlightNo', val)}
+                  />
+                  <AutocompleteInput
+                    label="Place of Receipt by Shipper"
+                    value={formData.placeOfReceipt}
+                    onChange={(e) => handleInputChange('placeOfReceipt', e.target.value)}
+                    suggestions={suggestionsRegistry.cities}
+                    onSelectSuggestion={(val) => handleInputChange('placeOfReceipt', val)}
+                  />
                 </div>
                 <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">City/Port of Loading</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.portOfLoading}
-                      onChange={(e) => handleInputChange('portOfLoading', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">City/Port of Discharge</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.portOfDischarge}
-                      onChange={(e) => handleInputChange('portOfDischarge', e.target.value)}
-                    />
-                  </div>
+                  <AutocompleteInput
+                    label="City/Port of Loading"
+                    value={formData.portOfLoading}
+                    onChange={(e) => handleInputChange('portOfLoading', e.target.value)}
+                    suggestions={suggestionsRegistry.cities}
+                    onSelectSuggestion={(val) => handleInputChange('portOfLoading', val)}
+                  />
+                  <AutocompleteInput
+                    label="City/Port of Discharge"
+                    value={formData.portOfDischarge}
+                    onChange={(e) => handleInputChange('portOfDischarge', e.target.value)}
+                    suggestions={suggestionsRegistry.cities}
+                    onSelectSuggestion={(val) => handleInputChange('portOfDischarge', val)}
+                  />
                 </div>
 
                 <div className="form-grid-3">
@@ -1386,43 +1587,35 @@ export default function Dashboard({ onLogout }) {
 
                 {/* Bank Details (Fully Editable) */}
                 <h4 className="form-section-title">Bank Accounts Info</h4>
-                <div className="form-group">
-                  <label className="form-label">A/c Holder Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.bankHolderName}
-                    onChange={(e) => handleInputChange('bankHolderName', e.target.value)}
-                  />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Bank Name</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    value={formData.bankName}
-                    onChange={(e) => handleInputChange('bankName', e.target.value)}
-                  />
-                </div>
+                <AutocompleteInput
+                  label="A/c Holder Name"
+                  value={formData.bankHolderName}
+                  onChange={(e) => handleInputChange('bankHolderName', e.target.value)}
+                  suggestions={suggestionsRegistry.holders}
+                  onSelectSuggestion={(val) => handleInputChange('bankHolderName', val)}
+                />
+                <AutocompleteInput
+                  label="Bank Name"
+                  value={formData.bankName}
+                  onChange={(e) => handleInputChange('bankName', e.target.value)}
+                  suggestions={suggestionsRegistry.banks}
+                  onSelectSuggestion={(val) => handleInputChange('bankName', val)}
+                />
                 <div className="form-grid-2">
-                  <div className="form-group">
-                    <label className="form-label">Account No</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.bankAccount}
-                      onChange={(e) => handleInputChange('bankAccount', e.target.value)}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Branch & IFSC</label>
-                    <input
-                      type="text"
-                      className="form-input"
-                      value={formData.bankBranch}
-                      onChange={(e) => handleInputChange('bankBranch', e.target.value)}
-                    />
-                  </div>
+                  <AutocompleteInput
+                    label="Account No"
+                    value={formData.bankAccount}
+                    onChange={(e) => handleInputChange('bankAccount', e.target.value)}
+                    suggestions={suggestionsRegistry.accounts}
+                    onSelectSuggestion={(val) => handleInputChange('bankAccount', val)}
+                  />
+                  <AutocompleteInput
+                    label="Branch & IFSC"
+                    value={formData.bankBranch}
+                    onChange={(e) => handleInputChange('bankBranch', e.target.value)}
+                    suggestions={suggestionsRegistry.branches}
+                    onSelectSuggestion={(val) => handleInputChange('bankBranch', val)}
+                  />
                 </div>
 
                 {/* Signatory (Fully Editable) */}
