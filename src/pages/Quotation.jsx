@@ -901,8 +901,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
                 ))}
               </tbody>
             </table>
-
-            {/* Footer Notes */}
+            
             <div style={{ fontSize: '15px', lineHeight: '1.6', marginTop: '40px' }}>
               <p style={{ fontWeight: 'bold', margin: '8px 0', fontSize: '16px', textDecoration: 'underline' }}>
                 As per detailes in Export Quotation

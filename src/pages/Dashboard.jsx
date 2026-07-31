@@ -718,19 +718,35 @@ export default function Dashboard({ onLogout }) {
       margin: 0.15,
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 3.5, useCORS: true, logging: false },
+      html2canvas: { scale: 3.5, useCORS: true, logging: false, scrollX: 0, scrollY: 0, width: 794, windowWidth: 794 },
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
+    const previewContainer = previewContainerRef.current;
     const scaleWrapper = document.getElementById('invoice-scale-wrapper');
+    const origOverflow = previewContainer ? previewContainer.style.overflow : '';
+
+    if (previewContainer) {
+      previewContainer.style.overflow = 'visible';
+    }
     if (scaleWrapper) {
-      scaleWrapper.style.transform = 'scale(1)';
+      scaleWrapper.style.transform = 'none';
+      scaleWrapper.style.height = 'auto';
     }
 
-    window.html2pdf().set(opt).from(element).save().then(() => {
+    const resetStyles = () => {
+      if (previewContainer) {
+        previewContainer.style.overflow = origOverflow;
+      }
       if (scaleWrapper) {
         scaleWrapper.style.transform = `scale(${previewScale})`;
+        scaleWrapper.style.height = `${cardHeight * previewScale}px`;
       }
+    };
+
+    window.html2pdf().set(opt).from(element).save().then(resetStyles).catch((err) => {
+      console.error("PDF generation error:", err);
+      resetStyles();
     });
   };
 
