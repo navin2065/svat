@@ -921,8 +921,8 @@ export default function Dashboard({ onLogout }) {
       <div className="mobile-dashboard-header">
         <div className="logo-container" style={{ fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <div style={{
-            width: '32px',
-            height: '32px',
+            width: '48px',
+            height: '48px',
             borderRadius: '50%',
             backgroundColor: '#FFFFFF',
             border: '1px solid rgba(0, 0, 0, 0.1)',
@@ -930,7 +930,7 @@ export default function Dashboard({ onLogout }) {
             alignItems: 'center',
             justifyContent: 'center',
             overflow: 'hidden',
-            padding: '2px',
+            padding: '3px',
             flexShrink: 0
           }}>
             <img
@@ -946,8 +946,7 @@ export default function Dashboard({ onLogout }) {
           <span className="logo-text">SVAT</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Rajesh</span>
-          <div className="user-avatar-mobile">M</div>
+          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dark)' }}>Rajesh</span>
         </div>
       </div>
 
@@ -956,8 +955,8 @@ export default function Dashboard({ onLogout }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'center', margin: '0.5rem 0 1rem 0' }}>
             <div style={{
-              width: '85px',
-              height: '85px',
+              width: '115px',
+              height: '115px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '2px solid rgba(255, 255, 255, 0.85)',
@@ -966,7 +965,7 @@ export default function Dashboard({ onLogout }) {
               alignItems: 'center',
               justifyContent: 'center',
               overflow: 'hidden',
-              padding: '6px'
+              padding: '8px'
             }}>
               <img
                 src="/logo.png"
@@ -1055,7 +1054,6 @@ export default function Dashboard({ onLogout }) {
 
         <div className="sidebar-user">
           <div className="user-info">
-            <div className="user-avatar">M</div>
             <div className="user-details">
               <p className="user-name">Rajesh</p>
               <p className="user-role">Billing Manager</p>

@@ -50,8 +50,8 @@ function App() {
         <header className="navbar">
           <div className="logo-container" onClick={() => setPage('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center' }}>
             <div style={{
-              width: '46px',
-              height: '46px',
+              width: '64px',
+              height: '64px',
               borderRadius: '50%',
               backgroundColor: '#FFFFFF',
               border: '1.5px solid rgba(255, 255, 255, 0.8)',
@@ -104,8 +104,8 @@ function App() {
           <div>
             <div className="logo-container" style={{ display: 'flex', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div style={{
-                width: '45px',
-                height: '45px',
+                width: '60px',
+                height: '60px',
                 borderRadius: '50%',
                 backgroundColor: '#FFFFFF',
                 border: '1.5px solid rgba(255, 255, 255, 0.8)',
@@ -114,7 +114,7 @@ function App() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 overflow: 'hidden',
-                padding: '3px'
+                padding: '4px'
               }}>
                 <img src="/logo.png" alt="SVAT Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
