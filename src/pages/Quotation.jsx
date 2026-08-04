@@ -470,6 +470,9 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
             <p style={{ fontSize: '11px', margin: '0 0 4px 0' }}>
               228/1, Rakkiyapalayam, Avinashi, Tirupur - 641 654.
             </p>
+            <p style={{ fontSize: '11px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
+              GSTIN: 33RSPPS1745J1ZU | MSME No: TN-28-0204870
+            </p>
             <p style={{ fontSize: '12px', fontWeight: 'bold', margin: '0 0 4px 0' }}>
               Contact: +91-9655237104, +91-9655235088
             </p>
@@ -786,6 +789,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
                 <h1 style={{ fontSize: '22px', fontWeight: 'bold', margin: '0 0 4px 0', textTransform: 'uppercase' }}>SREE VAARAHI AMMAN Transports</h1>
                 <h2 style={{ fontSize: '13px', fontWeight: 'bold', textDecoration: 'underline', margin: '0 0 6px 0' }}>EXPERT IN DOMESTIC CARGO MOVERS</h2>
                 <p style={{ margin: '0 0 3px 0', fontSize: '13px' }}><strong>Address:</strong> 228/1, Rakkiyapalayam, Avinashi, Tirupur - 641 654.</p>
+                <p style={{ margin: '0 0 3px 0', fontSize: '13px' }}><strong>GSTIN:</strong> 33RSPPS1745J1ZU | <strong>MSME No:</strong> TN-28-0204870</p>
                 <p style={{ margin: '0 0 3px 0', fontSize: '13px' }}><strong>Contact:</strong> +91-9655237104, +91-9655235088</p>
                 <p style={{ margin: '0 0 3px 0', fontSize: '13px' }}><strong>www:</strong> www.sreevaarahiammantransports.com</p>
                 <p style={{ margin: '0', fontSize: '13px' }}><strong>mail:</strong> Vaarahitpt104@gmail.com</p>

@@ -242,6 +242,8 @@ const DEFAULT_INVOICE = {
   companyAddress: 'NO: 228/1 RAKKIYAPALAYAM, AVINASHI, TIRUPUR - 641654',
   companyGst: '33RSPPS1745J1ZU',
   companyState: 'Tamil Nadu, Code: 33',
+  companyMsme: 'TN-28-0204870',
+  companyPhone: '96552 37104, 96552 35088',
   companyEmail: 'varahitpt104@gmail.com',
   companyWebsite: 'www.sreevaarahiammantransports.com',
   rcmStatus: 'Exempted',
@@ -1297,6 +1299,26 @@ export default function Dashboard({ onLogout }) {
                 </div>
                 <div className="form-grid-2">
                   <div className="form-group">
+                    <label className="form-label">MSME Number</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={formData.companyMsme || ''}
+                      onChange={(e) => handleInputChange('companyMsme', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Phone Number</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      value={formData.companyPhone || ''}
+                      onChange={(e) => handleInputChange('companyPhone', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="form-grid-2">
+                  <div className="form-group">
                     <label className="form-label">Website</label>
                     <input
                       type="text"
@@ -1714,6 +1736,14 @@ export default function Dashboard({ onLogout }) {
                             <div style={{ fontSize: '0.68rem', marginTop: '3px', color: '#000000', lineHeight: 1.3 }}>
                               {formData.companyAddress}<br />
                               <strong>GSTIN/UIN:</strong> {formData.companyGst} | <strong>State Name:</strong> {formData.companyState}<br />
+                              {(formData.companyMsme || formData.companyPhone) && (
+                                <>
+                                  {formData.companyMsme && <span><strong>MSME No:</strong> {formData.companyMsme}</span>}
+                                  {formData.companyMsme && formData.companyPhone ? ' | ' : ''}
+                                  {formData.companyPhone && <span><strong>Phone:</strong> {formData.companyPhone}</span>}
+                                  <br />
+                                </>
+                              )}
                               <strong>Website:</strong> {formData.companyWebsite} | <strong>E-Mail:</strong> {formData.companyEmail}<br />
                               <strong style={{ display: 'block', marginTop: '2px', color: '#1E293B', fontSize: '0.62rem' }}>ISO 9001:2015 Certified transport company</strong>
                             </div>
