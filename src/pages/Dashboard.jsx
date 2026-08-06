@@ -716,39 +716,41 @@ export default function Dashboard({ onLogout }) {
     // Replace slashes with underscores for safe filename
     const filename = `${(formData.debitNoteNo || 'invoice').replace(/\//g, '_')}.pdf`;
 
+    // Clone element to ensure 100% full-width PDF on both Desktop & Mobile without layout shifts
+    const clone = element.cloneNode(true);
+    clone.style.transform = 'none';
+    clone.style.margin = '0';
+    clone.style.boxShadow = 'none';
+    clone.style.width = '794px';
+    clone.style.boxSizing = 'border-box';
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '0';
+    tempContainer.style.top = '0';
+    tempContainer.style.zIndex = '-9999';
+    tempContainer.style.width = '794px';
+    tempContainer.style.backgroundColor = '#FFFFFF';
+    tempContainer.appendChild(clone);
+    document.body.appendChild(tempContainer);
+
     const opt = {
       margin: 0.15,
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 3.5, useCORS: true, logging: false, scrollX: 0, scrollY: 0, width: 794, windowWidth: 794 },
+      html2canvas: { scale: 3, useCORS: true, logging: false },
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
-    const previewContainer = previewContainerRef.current;
-    const scaleWrapper = document.getElementById('invoice-scale-wrapper');
-    const origOverflow = previewContainer ? previewContainer.style.overflow : '';
-
-    if (previewContainer) {
-      previewContainer.style.overflow = 'visible';
-    }
-    if (scaleWrapper) {
-      scaleWrapper.style.transform = 'none';
-      scaleWrapper.style.height = 'auto';
-    }
-
-    const resetStyles = () => {
-      if (previewContainer) {
-        previewContainer.style.overflow = origOverflow;
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
       }
-      if (scaleWrapper) {
-        scaleWrapper.style.transform = `scale(${previewScale})`;
-        scaleWrapper.style.height = `${cardHeight * previewScale}px`;
-      }
-    };
-
-    window.html2pdf().set(opt).from(element).save().then(resetStyles).catch((err) => {
+    }).catch((err) => {
       console.error("PDF generation error:", err);
-      resetStyles();
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
+      }
     });
   };
 
