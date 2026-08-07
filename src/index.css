@@ -1633,8 +1633,27 @@ button, input, select, textarea {
   .sidebar {
     display: none; /* Hide sidebar on mobile/tablet */
   }
-  .invoice-workspace {
-    grid-template-columns: 1fr;
+  .invoice-workspace,
+  .lr-workspace {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+  
+  .invoice-form-container,
+  .invoice-preview-container,
+  .lr-form-container,
+  .lr-preview-container {
+    position: static !important;
+    top: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .invoice-preview-container,
+  .lr-preview-container {
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    margin-top: 2rem !important;
   }
   
   /* Mobile Header & Bottom Navigation styling */

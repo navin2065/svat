@@ -999,12 +999,21 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
         
         @media (max-width: 1024px) {
           .lr-workspace {
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr !important;
+            gap: 2rem !important;
+          }
+          .invoice-form-container,
+          .lr-form-container,
+          .lr-preview-container {
+            position: static !important;
+            top: auto !important;
+            max-height: none !important;
+            overflow: visible !important;
           }
           .lr-preview-container {
-            position: static;
-            max-height: none;
-            overflow-x: auto;
+            overflow-x: auto !important;
+            max-width: 100% !important;
+            margin-top: 2rem !important;
           }
         }
       `}</style>
