@@ -281,6 +281,7 @@ export default function Dashboard({ onLogout }) {
   const [isQuotationMenuOpen, setIsQuotationMenuOpen] = useState(false);
   const [isMobileQuoteMenuOpen, setIsMobileQuoteMenuOpen] = useState(false);
   const [formData, setFormData] = useState(DEFAULT_INVOICE);
+  const [showSignature, setShowSignature] = useState(true);
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '';
@@ -400,6 +401,50 @@ export default function Dashboard({ onLogout }) {
     setTimeout(() => {
       setToast(prev => ({ ...prev, show: false }));
     }, 3000);
+  };
+
+  const handleMarkAsPaid = async (type, id) => {
+    const colMap = {
+      dn: 'invoices',
+      lr: 'lorry_receipts',
+      quote: 'quotations'
+    };
+    const colName = colMap[type];
+    try {
+      if (colName) {
+        await setDoc(doc(db, colName, id), { status: 'paid' }, { merge: true });
+      }
+      if (type === 'dn') {
+        setInvoices(prev => prev.map(inv => inv.id === id ? { ...inv, status: 'paid' } : inv));
+      } else if (type === 'lr') {
+        setSavedLrs(prev => prev.map(lr => lr.id === id ? { ...lr, status: 'paid' } : lr));
+      } else if (type === 'quote') {
+        setSavedQuotations(prev => prev.map(q => q.id === id ? { ...q, status: 'paid' } : q));
+      }
+      triggerToast('Payment marked as Paid!');
+    } catch (err) {
+      console.error("Firestore update error:", err);
+      if (type === 'dn') {
+        setInvoices(prev => {
+          const updated = prev.map(inv => inv.id === id ? { ...inv, status: 'paid' } : inv);
+          localStorage.setItem('svat_saved_invoices', JSON.stringify(updated));
+          return updated;
+        });
+      } else if (type === 'lr') {
+        setSavedLrs(prev => {
+          const updated = prev.map(lr => lr.id === id ? { ...lr, status: 'paid' } : lr);
+          localStorage.setItem('svat_saved_lrs', JSON.stringify(updated));
+          return updated;
+        });
+      } else if (type === 'quote') {
+        setSavedQuotations(prev => {
+          const updated = prev.map(q => q.id === id ? { ...q, status: 'paid' } : q);
+          localStorage.setItem('svat_saved_quotations', JSON.stringify(updated));
+          return updated;
+        });
+      }
+      triggerToast('Payment marked as Paid!');
+    }
   };
 
   const [subtotal, setSubtotal] = useState(0);
@@ -726,9 +771,9 @@ export default function Dashboard({ onLogout }) {
 
     const tempContainer = document.createElement('div');
     tempContainer.style.position = 'fixed';
-    tempContainer.style.left = '0';
+    tempContainer.style.left = '-9999px';
     tempContainer.style.top = '0';
-    tempContainer.style.zIndex = '-9999';
+    tempContainer.style.zIndex = '-99999';
     tempContainer.style.width = '794px';
     tempContainer.style.backgroundColor = '#FFFFFF';
     tempContainer.appendChild(clone);
@@ -738,7 +783,7 @@ export default function Dashboard({ onLogout }) {
       margin: 0.15,
       filename: filename,
       image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 3, useCORS: true, logging: false },
+      html2canvas: { scale: 3, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
     };
 
@@ -956,8 +1001,8 @@ export default function Dashboard({ onLogout }) {
 
       {/* Sidebar Panel */}
       <aside className="sidebar">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ display: 'flex', justifyContent: 'center', margin: '0.5rem 0 1rem 0' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0.5rem 0 0.5rem 0' }}>
             <div style={{
               width: '115px',
               height: '115px',
@@ -981,6 +1026,31 @@ export default function Dashboard({ onLogout }) {
                   filter: 'contrast(1.05)'
                 }}
               />
+            </div>
+            {/* Prominent Company Name in Sidebar */}
+            <div style={{ textAlign: 'center', marginTop: '0.85rem', padding: '0 0.25rem' }}>
+              <h3 style={{
+                fontSize: '0.92rem',
+                fontWeight: '900',
+                color: 'var(--text-dark)',
+                letterSpacing: '0.5px',
+                lineHeight: '1.25',
+                margin: 0,
+                textTransform: 'uppercase'
+              }}>
+                SREE VAARAHI AMMAN
+              </h3>
+              <div style={{
+                fontSize: '0.82rem',
+                fontWeight: '800',
+                color: '#D97706',
+                letterSpacing: '1px',
+                marginTop: '3px',
+                textTransform: 'uppercase'
+              }}>
+                TRANSPORTS
+              </div>
+              
             </div>
           </div>
 
@@ -1071,6 +1141,74 @@ export default function Dashboard({ onLogout }) {
 
       {/* Main Panel Content */}
       <main className="dashboard-content">
+        {/* Prominent Company Header Banner across Top Content Bar */}
+        <div style={{
+          display: 'flex',
+          justify: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          padding: '1.1rem 1.75rem',
+          marginBottom: '1.5rem',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.75) 0%, rgba(255, 255, 255, 0.4) 100%)',
+          backdropFilter: 'blur(25px)',
+          WebkitBackdropFilter: 'blur(25px)',
+          borderRadius: '20px',
+          border: '1.5px solid rgba(255, 255, 255, 0.8)',
+          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04), inset 0 1px 1px rgba(255, 255, 255, 0.8)'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              backgroundColor: '#FFFFFF',
+              border: '1px solid rgba(0,0,0,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '4px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
+              flexShrink: 0
+            }}>
+              <img src="/logo.png" alt="SVAT Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            </div>
+            <div>
+              <h1 style={{
+                fontSize: '1.4rem',
+                fontWeight: '900',
+                background: 'linear-gradient(135deg, #0F172A 0%, #1E293B 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                letterSpacing: '0.5px',
+                margin: 0,
+                textTransform: 'uppercase',
+                lineHeight: '1.2'
+              }}>
+                SREE VAARAHI AMMAN TRANSPORTS
+              </h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginTop: '3px', flexWrap: 'wrap' }}>
+              
+                
+              </div>
+            </div>
+          </div>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <span style={{
+              fontSize: '0.78rem',
+              fontWeight: '700',
+              backgroundColor: 'rgba(15, 23, 42, 0.06)',
+              padding: '6px 14px',
+              borderRadius: '50px',
+              border: '1px solid rgba(15, 23, 42, 0.1)',
+              color: 'var(--text-dark)'
+            }}>
+              GSTIN: <strong>33RSPPS1745J1ZU</strong>
+            </span>
+          </div>
+        </div>
+
         {/* Quotation Tab */}
         {activeTab.startsWith('quotation') && (
           <div style={{ padding: '20px', display: 'flex', justifyContent: 'center' }}>
@@ -1668,6 +1806,19 @@ export default function Dashboard({ onLogout }) {
                   />
                 </div>
 
+                <div className="form-group" style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginTop: '0.5rem', marginBottom: '1rem', padding: '0.75rem 1rem', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: '12px', border: '1.5px solid rgba(0,0,0,0.08)' }}>
+                  <input
+                    type="checkbox"
+                    id="invoice-sig-checkbox"
+                    checked={showSignature}
+                    onChange={(e) => setShowSignature(e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+                  />
+                  <label htmlFor="invoice-sig-checkbox" style={{ cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: 'var(--text-dark)', userSelect: 'none' }}>
+                    Include Authorised Signature & Seal
+                  </label>
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">Amount Chargeable in Words (Override)</label>
                   <input
@@ -2010,18 +2161,32 @@ export default function Dashboard({ onLogout }) {
                         {/* Signatory Block */}
                         <div style={{
                           borderTop: '1.5px solid #000000',
-                          padding: '8px',
+                          padding: '6px 8px',
                           display: 'flex',
                           flexDirection: 'column',
                           justifyContent: 'space-between',
-                          minHeight: '90px'
+                          minHeight: '95px',
+                          position: 'relative'
                         }}>
-                          <div style={{ fontWeight: '700', textAlign: 'center', textTransform: 'uppercase' }}>
+                          <div style={{ fontWeight: '700', textAlign: 'center', textTransform: 'uppercase', fontSize: '0.68rem' }}>
                             for {formData.companyName}
                           </div>
-                          <div style={{ textAlign: 'right', marginTop: 'auto' }}>
-                            <strong style={{ display: 'block', fontSize: '0.72rem', textAlign: 'right' }}>{formData.signatoryName}</strong>
-                            <span style={{ fontSize: '0.62rem', fontWeight: 'bold', display: 'block', color: '#444', textAlign: 'right', marginTop: '2px' }}>Authorised Signatory</span>
+                          {showSignature && (
+                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '2px 0 -4px 0' }}>
+                              <img
+                                src="/signature.png"
+                                alt="Authorised Signature & Seal"
+                                style={{
+                                  height: '60px',
+                                  maxWidth: '170px',
+                                  objectFit: 'contain'
+                                }}
+                              />
+                            </div>
+                          )}
+                          <div style={{ textAlign: 'center', marginTop: 'auto' }}>
+                            <strong style={{ display: 'block', fontSize: '0.72rem', textAlign: 'center' }}>{formData.signatoryName}</strong>
+                            <span style={{ fontSize: '0.62rem', fontWeight: 'bold', display: 'block', color: '#444', textAlign: 'center', marginTop: '2px' }}>Authorised Signatory</span>
                           </div>
                         </div>
                       </div>
@@ -2111,9 +2276,44 @@ export default function Dashboard({ onLogout }) {
                         <p className="history-name">{inv.consignee || inv.consigneeName}</p>
                         <p className="history-date">Generated: {inv.date}</p>
                       </div>
-                      <div className="history-right">
-                        <span className={`badge-status ${inv.status || 'pending'}`}>{inv.status || 'pending'}</span>
+                      <div className="history-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span className="history-amount">₹{(inv.amount || 0).toLocaleString()}</span>
+                        {inv.status === 'paid' ? (
+                          <span style={{ 
+                            backgroundColor: '#22C55E', 
+                            color: '#FFFFFF', 
+                            fontWeight: '700', 
+                            fontSize: '0.78rem', 
+                            padding: '6px 14px', 
+                            borderRadius: '50px', 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '4px',
+                            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
+                          }}>
+                            ✓ Paid
+                          </span>
+                        ) : (
+                          <button
+                            className="btn-outline"
+                            onClick={() => handleMarkAsPaid('dn', inv.id)}
+                            style={{
+                              borderColor: '#22C55E',
+                              color: '#15803D',
+                              backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                              fontWeight: '700',
+                              fontSize: '0.8rem',
+                              padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              borderRadius: '8px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✓ Mark as Paid
+                          </button>
+                        )}
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button className="btn-outline" onClick={() => handleLoadInvoice(inv)}>
                             Edit / View
@@ -2146,8 +2346,44 @@ export default function Dashboard({ onLogout }) {
                         <p className="history-name">From: {lr.consignor || 'Unknown'} | To: {lr.consignee || 'Unknown'}</p>
                         <p className="history-date">Truck: {lr.truckNo || 'N/A'} | Date: {lr.date}</p>
                       </div>
-                      <div className="history-right">
+                      <div className="history-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <span className="history-amount">₹{(lr.amount || 0).toLocaleString()}</span>
+                        {lr.status === 'paid' ? (
+                          <span style={{ 
+                            backgroundColor: '#22C55E', 
+                            color: '#FFFFFF', 
+                            fontWeight: '700', 
+                            fontSize: '0.78rem', 
+                            padding: '6px 14px', 
+                            borderRadius: '50px', 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '4px',
+                            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
+                          }}>
+                            ✓ Paid
+                          </span>
+                        ) : (
+                          <button
+                            className="btn-outline"
+                            onClick={() => handleMarkAsPaid('lr', lr.id)}
+                            style={{
+                              borderColor: '#22C55E',
+                              color: '#15803D',
+                              backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                              fontWeight: '700',
+                              fontSize: '0.8rem',
+                              padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              borderRadius: '8px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✓ Mark as Paid
+                          </button>
+                        )}
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button className="btn-outline" onClick={() => {
                             setLoadedLr(lr);
@@ -2183,7 +2419,43 @@ export default function Dashboard({ onLogout }) {
                         <p className="history-name">Route: {quote.from || 'Tirupur'} to {quote.to}</p>
                         <p className="history-date">Type: {quote.type === 'export' ? 'Export' : 'Domestic'} | Date: {quote.date}</p>
                       </div>
-                      <div className="history-right">
+                      <div className="history-right" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        {quote.status === 'paid' ? (
+                          <span style={{ 
+                            backgroundColor: '#22C55E', 
+                            color: '#FFFFFF', 
+                            fontWeight: '700', 
+                            fontSize: '0.78rem', 
+                            padding: '6px 14px', 
+                            borderRadius: '50px', 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '4px',
+                            boxShadow: '0 2px 8px rgba(34, 197, 94, 0.3)'
+                          }}>
+                            ✓ Paid
+                          </span>
+                        ) : (
+                          <button
+                            className="btn-outline"
+                            onClick={() => handleMarkAsPaid('quote', quote.id)}
+                            style={{
+                              borderColor: '#22C55E',
+                              color: '#15803D',
+                              backgroundColor: 'rgba(34, 197, 94, 0.08)',
+                              fontWeight: '700',
+                              fontSize: '0.8rem',
+                              padding: '6px 12px',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              borderRadius: '8px',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✓ Mark as Paid
+                          </button>
+                        )}
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <button className="btn-outline" onClick={() => {
                             setLoadedQuotation(quote);

@@ -1013,6 +1013,11 @@ button, input, select, textarea {
   -webkit-backdrop-filter: blur(45px) saturate(210%);
   box-shadow: var(--shadow-premium), 0 2px 14px rgba(255, 255, 255, 0.6) inset;
   text-align: left;
+  position: sticky;
+  top: 90px;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  padding-right: 1rem;
 }
 
 .form-section-title {
@@ -1131,9 +1136,9 @@ button, input, select, textarea {
 /* Invoice Preview Column */
 .invoice-preview-container {
   position: sticky;
-  top: 100px;
+  top: 90px;
   max-height: calc(100vh - 120px);
-  overflow-y: auto;
+  overflow: auto;
   padding-right: 0.5rem;
 }
 

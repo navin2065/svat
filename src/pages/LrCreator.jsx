@@ -298,8 +298,9 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
   };
 
   const [signatureImage, setSignatureImage] = useState(() => {
-    return localStorage.getItem('svat_signature_image') || '';
+    return localStorage.getItem('svat_signature_image') || '/signature.png';
   });
+  const [showSignature, setShowSignature] = useState(true);
 
   const handleSignatureUpload = (e) => {
     const file = e.target.files[0];
@@ -752,25 +753,36 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
       pagebreak:    { mode: 'css' }
     };
     
-    const cards = element.querySelectorAll('.lr-preview-card');
-    cards.forEach(card => {
+    const clone = element.cloneNode(true);
+    const cloneCards = clone.querySelectorAll('.lr-preview-card');
+    cloneCards.forEach(card => {
       card.style.boxShadow = 'none';
       card.style.marginBottom = '0';
     });
     
-    const scaleWrapper = document.getElementById('lr-scale-wrapper');
-    if (scaleWrapper) {
-      scaleWrapper.style.transform = 'scale(1)';
+    const cloneScaleWrapper = clone.querySelector('#lr-scale-wrapper') || clone;
+    if (cloneScaleWrapper) {
+      cloneScaleWrapper.style.transform = 'scale(1)';
     }
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.zIndex = '-99999';
+    tempContainer.style.width = '1123px';
+    tempContainer.style.backgroundColor = '#FFFFFF';
+    tempContainer.appendChild(clone);
+    document.body.appendChild(tempContainer);
     
-    window.html2pdf().set(opt).from(element).save().then(() => {
-      // Restore shadow and margins
-      cards.forEach((card, idx) => {
-        card.style.boxShadow = '0 10px 30px -10px rgba(0,0,0,0.5)';
-        card.style.marginBottom = idx < cargoChunks.length - 1 ? '20px' : '0';
-      });
-      if (scaleWrapper) {
-        scaleWrapper.style.transform = `scale(${previewScale})`;
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
+      }
+    }).catch((err) => {
+      console.error("PDF generation error:", err);
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
       }
     });
   };
@@ -895,9 +907,17 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
 
         .lr-workspace {
           display: grid;
-          grid-template-columns: 350px 1fr;
+          grid-template-columns: 360px 1fr;
           gap: 2rem;
           align-items: start;
+        }
+
+        .invoice-form-container {
+          position: sticky;
+          top: 90px;
+          max-height: calc(100vh - 120px);
+          overflow-y: auto;
+          padding-right: 0.5rem;
         }
 
         /* Force form fields to be line-by-line to fit narrow column */
@@ -910,7 +930,7 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
         
         .lr-preview-container {
           position: sticky;
-          top: 100px;
+          top: 90px;
           max-height: calc(100vh - 120px);
           overflow: auto;
           padding-right: 0.5rem;
@@ -1410,85 +1430,28 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
             </div>
           </div>
 
-          {/* Authorized Signature Upload */}
-          <h4 className="form-section-title">Authorized Signature</h4>
+          {/* Authorized Signature Toggle */}
+          <h4 className="form-section-title">Authorized Signature & Seal</h4>
           <div style={{ 
             marginBottom: '1.5rem', 
             backgroundColor: '#1E2330', 
-            padding: '12px', 
+            padding: '12px 16px', 
             borderRadius: '6px', 
             border: '1px solid #262D3D',
             display: 'flex',
-            flexDirection: 'column',
-            gap: '8px'
+            alignItems: 'center',
+            gap: '0.6rem'
           }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-              <input 
-                type="file" 
-                accept="image/*" 
-                onChange={handleSignatureUpload} 
-                style={{ display: 'none' }}
-                id="sig-upload-input"
-              />
-              <label 
-                htmlFor="sig-upload-input" 
-                className="btn-outline" 
-                style={{ 
-                  padding: '6px 12px', 
-                  fontSize: '0.8rem', 
-                  cursor: 'pointer',
-                  borderColor: 'rgba(241, 180, 0, 0.4)',
-                  color: '#F1B400',
-                  margin: 0,
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  borderRadius: '4px',
-                  borderWidth: '1.5px',
-                  borderStyle: 'solid'
-                }}
-              >
-                Upload Signature Image
-              </label>
-              {signatureImage && (
-                <button 
-                  className="btn-outline" 
-                  style={{ 
-                    padding: '6px 12px', 
-                    fontSize: '0.8rem', 
-                    color: '#EF4444', 
-                    borderColor: '#EF4444',
-                    margin: 0,
-                    borderRadius: '4px'
-                  }}
-                  onClick={handleRemoveSignature}
-                >
-                  Remove
-                </button>
-              )}
-            </div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Supports JPG, PNG, WEBP, etc. Max size 5MB.
-            </span>
-            {signatureImage && (
-              <div style={{ 
-                marginTop: '8px', 
-                backgroundColor: '#FFFFFF', 
-                padding: '4px 8px', 
-                borderRadius: '4px', 
-                display: 'inline-flex', 
-                alignItems: 'center', 
-                justifyContent: 'center', 
-                maxHeight: '40px',
-                alignSelf: 'flex-start'
-              }}>
-                <img 
-                  src={signatureImage} 
-                  alt="Signature Preview" 
-                  style={{ maxHeight: '32px', objectFit: 'contain' }} 
-                />
-              </div>
-            )}
+            <input
+              type="checkbox"
+              id="lr-sig-toggle"
+              checked={showSignature}
+              onChange={(e) => setShowSignature(e.target.checked)}
+              style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#F1B400' }}
+            />
+            <label htmlFor="lr-sig-toggle" style={{ cursor: 'pointer', fontWeight: 700, fontSize: '0.88rem', color: '#FFFFFF', userSelect: 'none' }}>
+              Include Authorised Signature & Seal
+            </label>
           </div>
 
           {/* Copy indicators checklist */}
@@ -1983,7 +1946,7 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                                   <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                                     <img src="/Title.png" alt="SREE VAARAHI AMMAN TRANSPORTS" style={{ height: '18px', width: 'auto', objectFit: 'contain' }} />
                                   </div>
-                                  {signatureImage && (
+                                  {showSignature && signatureImage && (
                                     <img 
                                       src={signatureImage} 
                                       alt="Signature" 

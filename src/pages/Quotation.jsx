@@ -185,6 +185,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     '', '', '', '', '', '', ''
   ]);
   const [toAddress, setToAddress] = useState('');
+  const [showSignature, setShowSignature] = useState(true);
   const [quotationDate, setQuotationDate] = useState(() => {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -394,31 +395,46 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
     const element = document.getElementById(contentId);
     if (!element) return;
     
-    const textareas = element.querySelectorAll('.pdf-textarea');
+    const clone = element.cloneNode(true);
+    
+    const textareas = clone.querySelectorAll('.pdf-textarea');
     textareas.forEach(ta => {
       ta.style.border = 'none';
     });
     
-    const dateInputs = element.querySelectorAll('.pdf-date-input');
-    const dateTexts = element.querySelectorAll('.pdf-date-text');
+    const dateInputs = clone.querySelectorAll('.pdf-date-input');
+    const dateTexts = clone.querySelectorAll('.pdf-date-text');
     dateInputs.forEach(input => input.style.display = 'none');
     dateTexts.forEach(text => text.style.display = 'inline');
+
+    const tempContainer = document.createElement('div');
+    tempContainer.style.position = 'fixed';
+    tempContainer.style.left = '-9999px';
+    tempContainer.style.top = '0';
+    tempContainer.style.zIndex = '-99999';
+    tempContainer.style.width = '800px';
+    tempContainer.style.backgroundColor = '#FFFFFF';
+    tempContainer.appendChild(clone);
+    document.body.appendChild(tempContainer);
     
     const opt = {
       margin:       0.2,
       filename:     filename,
       image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 3.5, useCORS: true, logging: false },
+      html2canvas:  { scale: 3.5, useCORS: true, logging: false, scrollX: 0, scrollY: 0 },
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' },
       pagebreak:    { mode: 'avoid-all' }
     };
     
-    window.html2pdf().set(opt).from(element).save().then(() => {
-      textareas.forEach(ta => {
-        ta.style.border = '1px dashed #ccc';
-      });
-      dateInputs.forEach(input => input.style.display = 'inline');
-      dateTexts.forEach(text => text.style.display = 'none');
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
+      }
+    }).catch((err) => {
+      console.error("PDF generation error:", err);
+      if (document.body.contains(tempContainer)) {
+        document.body.removeChild(tempContainer);
+      }
     });
   };
 
@@ -714,54 +730,84 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
             </tr>
           </tbody>
         </table>
+          {/* Footer Notes & Signatory Block */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '15px' }}>
+          <div style={{ fontSize: '13px', lineHeight: '1.4', maxWidth: '480px', textAlign: 'left' }}>
+            <p style={{ fontWeight: 'bold', margin: '4px 0' }}>
+              Urgent Load Consider as a Full Load Only Timing Load
+            </p>
+            <p style={{ fontWeight: 'bold', margin: '4px 0' }}>
+              This Price Is Valid for Present Fuel Price; Festival & Lockdown time Extra Charges.
+            </p>
+          </div>
 
-        {/* Footer Notes */}
-        <div style={{ fontSize: '13px', lineHeight: '1.4' }}>
-          <p style={{ fontWeight: 'bold', margin: '4px 0' }}>
-            Urgent Load Consider as a Full Load Only Timing Load
-          </p>
-          <p style={{ fontWeight: 'bold', margin: '4px 0' }}>
-            This Price Is Valid for Present Fuel Price; Festival & Lockdown time Extra Charges.
-          </p>
+          {showSignature && (
+            <div style={{ textAlign: 'center', minWidth: '220px' }}>
+              <p style={{ fontWeight: 'bold', margin: '0 0 2px 0', fontSize: '11px', textTransform: 'uppercase' }}>
+                For SREE VAARAHI AMMAN TRANSPORTS
+              </p>
+              <div style={{ display: 'flex', justifyContent: 'center', margin: '2px 0' }}>
+                <img src="/signature.png" alt="Signature & Seal" style={{ height: '60px', width: 'auto', objectFit: 'contain' }} />
+              </div>
+              <p style={{ fontWeight: 'bold', margin: '4px 0 0 0', fontSize: '11px', borderTop: '1px dotted #000', paddingTop: '2px' }}>
+                Authorised Signatory
+              </p>
+            </div>
+          )}
         </div>
       </div>
       
-      {/* Download/Save Buttons Container */}
-      <div style={{ display: 'flex', gap: '15px', marginTop: '20px', marginBottom: '40px' }}>
-        <button 
-          onClick={handleSaveQuotation}
-          className="btn-outline"
-          style={{ 
-            padding: '12px 24px', 
-            borderRadius: '6px', 
-            cursor: 'pointer',
-            fontSize: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontWeight: 'bold'
-          }}
-        >
-          <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>✓</span>
-          Save Quotation
-        </button>
-        <button 
-          onClick={() => handleDownloadPDF('quotation-content', 'SVAT_Rate_Quotation.pdf')} 
-          className="btn-primary"
-          style={{ 
-            padding: '12px 24px', 
-            borderRadius: '6px', 
-            cursor: 'pointer',
-            fontSize: '16px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            fontWeight: 'bold'
-          }}
-        >
-          <Download size={20} />
-          Download PDF
-        </button>
+      {/* Download/Save Buttons Container & Checkbox */}
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', marginTop: '20px', marginBottom: '40px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '6px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
+          <input
+            type="checkbox"
+            id="export-sig-toggle"
+            checked={showSignature}
+            onChange={(e) => setShowSignature(e.target.checked)}
+            style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+          />
+          <label htmlFor="export-sig-toggle" style={{ cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', color: '#000000', userSelect: 'none' }}>
+            Include Authorised Signature & Seal
+          </label>
+        </div>
+
+        <div style={{ display: 'flex', gap: '15px' }}>
+          <button 
+            onClick={handleSaveQuotation}
+            className="btn-outline"
+            style={{ 
+              padding: '12px 24px', 
+              borderRadius: '6px', 
+              cursor: 'pointer',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: 'bold'
+            }}
+          >
+            <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>✓</span>
+            Save Quotation
+          </button>
+          <button 
+            onClick={() => handleDownloadPDF('quotation-content', 'SVAT_Rate_Quotation.pdf')} 
+            className="btn-primary"
+            style={{ 
+              padding: '12px 24px', 
+              borderRadius: '6px', 
+              cursor: 'pointer',
+              fontSize: '16px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontWeight: 'bold'
+            }}
+          >
+            <Download size={20} />
+            Download PDF
+          </button>
+        </div>
       </div>
         </>
       ) : (
@@ -823,8 +869,8 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
                 />
               </div>
               {/* Date Picker */}
-              <div style={{ textAlign: 'right', fontSize: '13px', paddingRight: '15px' }}>
-                <label style={{ fontWeight: 'bold', marginRight: '6px', fontSize: '15px' }}>Date:</label>
+              <div style={{ textAlign: 'right', fontSize: '13px', paddingRight: '20px' }}>
+                <label style={{ fontWeight: 'bold', marginRight: '6px', fontSize: '13px' }}>Date:</label>
                 <span className="pdf-date-text" style={{ display: 'none', fontSize: '13px', fontWeight: 'bold' }}>
                   {formatDate(quotationDate)}
                 </span>
@@ -847,114 +893,139 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               </div>
             </div>
 
-            
-            <div style={{ display: 'flex', justifyContent: 'space-around', marginBottom: '20px', fontSize: '16px', fontWeight: 'bold' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span>From</span>
-                <AutocompleteInlineInput 
-                  value={domesticLocation.from} 
-                  onChange={(e) => setDomesticLocation({...domesticLocation, from: e.target.value})}
-                  suggestions={suggestionsRegistry.cities}
-                  style={{ border: '1px solid #000', padding: '4px 10px', outline: 'none', width: '180px', fontFamily: '"Times New Roman", Times, serif', fontSize: '16px', fontWeight: 'bold' }} 
-                />
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span>To</span>
-                <AutocompleteInlineInput 
-                  value={domesticLocation.to} 
-                  onChange={(e) => setDomesticLocation({...domesticLocation, to: e.target.value})}
-                  suggestions={suggestionsRegistry.cities}
-                  style={{ border: '1px solid #000', padding: '4px 10px', outline: 'none', width: '180px', fontFamily: '"Times New Roman", Times, serif', fontSize: '16px', fontWeight: 'bold' }} 
-                />
-              </div>
+            {/* Route Header */}
+            <div style={{ textAlign: 'center', marginBottom: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>RATE QUOTATION FOR</span>
+              <AutocompleteInlineInput
+                value={domesticLocation.from}
+                onChange={(e) => setDomesticLocation({ ...domesticLocation, from: e.target.value })}
+                suggestions={suggestionsRegistry.cities}
+                style={{ ...inputStyle, width: '90px', fontSize: '16px', borderBottom: '1px dashed #ccc' }}
+              />
+              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>TO</span>
+              <AutocompleteInlineInput
+                value={domesticLocation.to}
+                onChange={(e) => setDomesticLocation({ ...domesticLocation, to: e.target.value })}
+                suggestions={suggestionsRegistry.cities}
+                style={{ ...inputStyle, width: '90px', fontSize: '16px', borderBottom: '1px dashed #ccc' }}
+              />
             </div>
-
-            
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: 'auto', textAlign: 'center', fontSize: '14px' }}>
+            {/* Rates Table */}
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', textAlign: 'center', fontSize: '13px' }}>
               <thead>
-                <tr>
-                  <th style={{ border: '1px solid #000', padding: '8px 10px', fontWeight: 'bold', fontSize: '15px' }}>Container Size</th>
-                  <th style={{ border: '1px solid #000', padding: '8px 10px', fontWeight: 'bold', fontSize: '15px' }}>Weight</th>
-                  <th style={{ border: '1px solid #000', padding: '8px 10px', fontWeight: 'bold', fontSize: '15px' }}>Rates</th>
-                  <th style={{ border: '1px solid #000', padding: '8px 10px', fontWeight: 'bold', fontSize: '15px' }}>Halting Charge</th>
+                <tr style={{ backgroundColor: '#ADD8E6' }}>
+                  <th style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold', width: '35%' }}>VEHICLE SIZE</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold', width: '35%' }}>WEIGHT IN TON</th>
+                  <th style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold', width: '30%' }}>RATES RS</th>
                 </tr>
               </thead>
               <tbody>
                 {[
-                  { size: '20 FT', weight: '6 mt', rates: '35,000', halting: '1500' },
-                  { size: '22 FT', weight: '6 mt', rates: '36,000', halting: '1500' },
-                  { size: '24 FT', weight: '7 mt', rates: '40,000', halting: '2000' },
-                  { size: '32 FT SXL', weight: '7 mt', rates: '48,000', halting: '2000' },
-                  { size: '32 FT SXL', weight: '9 mt', rates: '52,000', halting: '2000' },
-                  { size: '32 FT MXL', weight: '15 mt', rates: '57,000', halting: '2500' },
-                  { size: '32 FT MXL', weight: '18 mt', rates: '62,000', halting: '2500' }
-                ].map((row, idx) => (
-                  <tr key={idx}>
-                    <td style={{ border: '1px solid #000', padding: '8px 10px', fontWeight: 'bold', textAlign: 'left', paddingLeft: '15px' }}>{row.size}</td>
-                    <td style={{ border: '1px solid #000', padding: '8px 10px', fontWeight: 'bold' }}>{row.weight}</td>
-                    <td style={{ border: '1px solid #000', padding: '0', fontWeight: 'bold' }}>
+                  { vehicle: 'PICKUP', weight: '1 TON' },
+                  { vehicle: '14 FEET', weight: '3 - 4 TON' },
+                  { vehicle: '17 FEET', weight: '4.5 - 5.5 TON' },
+                  { vehicle: '19 FEET', weight: '6 TON' },
+                  { vehicle: '20 FEET', weight: '7 TON' },
+                  { vehicle: '22 FEET', weight: '7 - 10 TON' },
+                  { vehicle: '24 FEET', weight: '7 - 10 TON' },
+                ].map((row, index) => (
+                  <tr key={index}>
+                    <td style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>{row.vehicle}</td>
+                    <td style={{ border: '1px solid #000', padding: '6px', fontWeight: 'bold' }}>{row.weight}</td>
+                    <td style={{ border: '1px solid #000', padding: '0' }}>
                       <input 
                         type="text" 
-                        value={domesticRates[idx]} 
-                        onChange={(e) => handleDomesticRateChange(idx, e.target.value)} 
-                        style={{ ...inputStyle, padding: '8px 0', fontSize: '15px' }}
-                        placeholder={row.rates}
+                        value={domesticRates[index] || ''} 
+                        onChange={(e) => handleDomesticRateChange(index, e.target.value)} 
+                        style={{ ...inputStyle, fontSize: '13px' }}
                       />
                     </td>
-                    <td style={{ border: '1px solid #000', padding: '8px 10px', fontWeight: 'bold' }}>{row.halting}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            
-            <div style={{ fontSize: '14px', lineHeight: '1.5', marginTop: '20px' }}>
-              <p style={{ fontWeight: 'bold', margin: '4px 0', fontSize: '15px', textDecoration: 'underline' }}>
-                As per detailes in Export Quotation
-              </p>
-              <p style={{ fontWeight: 'bold', margin: '4px 0', fontSize: '14px' }}>
-                Urgent Load Consider as a Full Load Only Timing Load
-              </p>
-              <p style={{ fontWeight: 'bold', margin: '4px 0', fontSize: '14px' }}>
-                This Price Is Valid for Present Fuel Price; Festival & Lockdown time Extra Charges.
-              </p>
+
+            {/* Footer Notes & Signatory Block */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '20px' }}>
+              <div style={{ fontSize: '13px', lineHeight: '1.5', textAlign: 'left', maxWidth: '480px' }}>
+                <p style={{ fontWeight: 'bold', margin: '4px 0', fontSize: '14px', textDecoration: 'underline' }}>
+                  As per detailes in Export Quotation
+                </p>
+                <p style={{ fontWeight: 'bold', margin: '4px 0', fontSize: '13px' }}>
+                  Urgent Load Consider as a Full Load Only Timing Load
+                </p>
+                <p style={{ fontWeight: 'bold', margin: '4px 0', fontSize: '13px' }}>
+                  This Price Is Valid for Present Fuel Price; Festival & Lockdown time Extra Charges.
+                </p>
+              </div>
+
+              {showSignature && (
+                <div style={{ textAlign: 'center', minWidth: '220px' }}>
+                  <p style={{ fontWeight: 'bold', margin: '0 0 2px 0', fontSize: '11px', textTransform: 'uppercase' }}>
+                    For SREE VAARAHI AMMAN TRANSPORTS
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'center', margin: '2px 0' }}>
+                    <img src="/signature.png" alt="Signature & Seal" style={{ height: '60px', width: 'auto', objectFit: 'contain' }} />
+                  </div>
+                  <p style={{ fontWeight: 'bold', margin: '4px 0 0 0', fontSize: '11px', borderTop: '1px dotted #000', paddingTop: '2px' }}>
+                    Authorised Signatory
+                  </p>
+                </div>
+              )}
             </div>
           </div>
           
-          <div style={{ display: 'flex', gap: '15px', marginTop: '20px', marginBottom: '40px' }}>
-            <button 
-              onClick={handleSaveQuotation}
-              className="btn-outline"
-              style={{ 
-                padding: '12px 24px', 
-                borderRadius: '6px', 
-                cursor: 'pointer',
-                fontSize: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontWeight: 'bold'
-              }}
-            >
-              <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>✓</span>
-              Save Quotation
-            </button>
-            <button 
-              onClick={() => handleDownloadPDF('domestic-quotation-content', 'SVAT_Domestic_Quotation.pdf')} 
-              className="btn-primary"
-              style={{ 
-                padding: '12px 24px', 
-                borderRadius: '6px', 
-                cursor: 'pointer',
-                fontSize: '16px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontWeight: 'bold'
-              }}
-            >
-              <Download size={20} />
-              Download PDF
-            </button>
+          {/* Download/Save Buttons Container & Checkbox */}
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px', marginTop: '20px', marginBottom: '40px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '6px 12px', backgroundColor: 'rgba(255,255,255,0.7)', borderRadius: '8px', border: '1px solid rgba(0,0,0,0.1)' }}>
+              <input
+                type="checkbox"
+                id="domestic-sig-toggle"
+                checked={showSignature}
+                onChange={(e) => setShowSignature(e.target.checked)}
+                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--primary)' }}
+              />
+              <label htmlFor="domestic-sig-toggle" style={{ cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', color: '#000000', userSelect: 'none' }}>
+                Include Authorised Signature & Seal
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: '15px' }}>
+              <button 
+                onClick={handleSaveQuotation}
+                className="btn-outline"
+                style={{ 
+                  padding: '12px 24px', 
+                  borderRadius: '6px', 
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontWeight: 'bold'
+                }}
+              >
+                <span style={{ fontSize: '1.2rem', fontWeight: 'bold' }}>✓</span>
+                Save Quotation
+              </button>
+              <button 
+                onClick={() => handleDownloadPDF('domestic-quotation-content', 'SVAT_Domestic_Quotation.pdf')} 
+                className="btn-primary"
+                style={{ 
+                  padding: '12px 24px', 
+                  borderRadius: '6px', 
+                  cursor: 'pointer',
+                  fontSize: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  fontWeight: 'bold'
+                }}
+              >
+                <Download size={20} />
+                Download PDF
+              </button>
+            </div>
           </div>
         </>
       )}
