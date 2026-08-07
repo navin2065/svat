@@ -501,7 +501,7 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
         {/* Title */}
         <div style={{ textAlign: 'center', marginBottom: '10px' }}>
           <h3 style={{ fontSize: '14px', fontWeight: 'bold', textDecoration: 'underline', margin: '0' }}>
-            RATE QUATATION
+            EXPORT RATE QUATATION
           </h3>
         </div>
 
@@ -842,6 +842,13 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               </div>
             </div>
 
+            {/* Title */}
+            <div style={{ textAlign: 'center', marginBottom: '15px' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 'bold', textDecoration: 'underline', margin: '0' }}>
+                DOMESTIC RATE QUOTATION
+              </h3>
+            </div>
+
             {/* Address & Date Flex Container */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '15px' }}>
               {/* Address */}
@@ -893,23 +900,48 @@ const Quotation = ({ type = 'export', loadedData = null, triggerToast = null }) 
               </div>
             </div>
 
-            {/* Route Header */}
-            <div style={{ textAlign: 'center', marginBottom: '12px', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>RATE QUOTATION FOR</span>
-              <AutocompleteInlineInput
-                value={domesticLocation.from}
-                onChange={(e) => setDomesticLocation({ ...domesticLocation, from: e.target.value })}
-                suggestions={suggestionsRegistry.cities}
-                style={{ ...inputStyle, width: '90px', fontSize: '16px', borderBottom: '1px dashed #ccc' }}
-              />
-              <span style={{ fontSize: '16px', fontWeight: 'bold' }}>TO</span>
-              <AutocompleteInlineInput
-                value={domesticLocation.to}
-                onChange={(e) => setDomesticLocation({ ...domesticLocation, to: e.target.value })}
-                suggestions={suggestionsRegistry.cities}
-                style={{ ...inputStyle, width: '90px', fontSize: '16px', borderBottom: '1px dashed #ccc' }}
-              />
+            {/* Route Header (From & To) */}
+            <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', marginBottom: '20px', fontSize: '15px', fontWeight: 'bold' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>From</span>
+                <AutocompleteInlineInput
+                  value={domesticLocation.from}
+                  onChange={(e) => setDomesticLocation({ ...domesticLocation, from: e.target.value })}
+                  suggestions={suggestionsRegistry.cities}
+                  style={{
+                    border: '1px solid #000',
+                    background: 'transparent',
+                    padding: '4px 10px',
+                    outline: 'none',
+                    width: '180px',
+                    fontFamily: '"Times New Roman", Times, serif',
+                    fontSize: '15px',
+                    fontWeight: 'bold'
+                  }}
+                  className="pdf-textarea"
+                />
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <span>To</span>
+                <AutocompleteInlineInput
+                  value={domesticLocation.to}
+                  onChange={(e) => setDomesticLocation({ ...domesticLocation, to: e.target.value })}
+                  suggestions={suggestionsRegistry.cities}
+                  style={{
+                    border: '1px solid #000',
+                    background: 'transparent',
+                    padding: '4px 10px',
+                    outline: 'none',
+                    width: '180px',
+                    fontFamily: '"Times New Roman", Times, serif',
+                    fontSize: '15px',
+                    fontWeight: 'bold'
+                  }}
+                  className="pdf-textarea"
+                />
+              </div>
             </div>
+
             {/* Rates Table */}
             <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px', textAlign: 'center', fontSize: '13px' }}>
               <thead>

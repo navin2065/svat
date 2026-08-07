@@ -297,10 +297,12 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
     return dateStr;
   };
 
-  const [signatureImage, setSignatureImage] = useState(() => {
-    return localStorage.getItem('svat_signature_image') || '/signature.png';
-  });
+  const [signatureImage, setSignatureImage] = useState('/signature.png');
   const [showSignature, setShowSignature] = useState(true);
+
+  useEffect(() => {
+    localStorage.removeItem('svat_signature_image');
+  }, []);
 
   const handleSignatureUpload = (e) => {
     const file = e.target.files[0];
@@ -1241,11 +1243,13 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
               {(formData.cargoItems || []).map((item, idx) => (
                 <tr key={idx}>
                   <td>
-                    <AutocompleteTableInput
-                      placeholder="e.g. 100"
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', padding: '6px 8px', fontSize: '0.8rem' }}
+                      placeholder="e.g. 10"
                       value={item.noOfPackages}
                       onChange={(e) => handleCargoItemChange(idx, 'noOfPackages', e.target.value)}
-                      suggestions={getFieldSuggestionsForCargo('noOfPackages')}
                     />
                   </td>
                   <td>
@@ -1257,19 +1261,23 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                     />
                   </td>
                   <td>
-                    <AutocompleteTableInput
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', padding: '6px 8px', fontSize: '0.8rem' }}
                       placeholder="Kgs"
                       value={item.actualWeight}
                       onChange={(e) => handleCargoItemChange(idx, 'actualWeight', e.target.value)}
-                      suggestions={getFieldSuggestionsForCargo('actualWeight')}
                     />
                   </td>
                   <td>
-                    <AutocompleteTableInput
+                    <input
+                      type="text"
+                      className="form-input"
+                      style={{ width: '100%', padding: '6px 8px', fontSize: '0.8rem' }}
                       placeholder="Kgs"
                       value={item.chargedWeight}
                       onChange={(e) => handleCargoItemChange(idx, 'chargedWeight', e.target.value)}
-                      suggestions={getFieldSuggestionsForCargo('chargedWeight')}
                     />
                   </td>
                   <td>
@@ -1941,9 +1949,23 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                               </td>
                               {/* Receiver's Signature Box */}
                               <td style={{ width: '35%', borderRight: '3px solid #08103A', padding: '6px', verticalAlign: 'top', fontSize: '0.65rem' }}>
-                                <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100px', justifyContent: 'space-between' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100px', justifyContent: 'space-between', alignItems: 'center', position: 'relative' }}>
                                   <div style={{ textAlign: 'center' }}>Received the goods in good condition and order</div>
-                                  <div style={{ textAlign: 'center', marginTop: 'auto', paddingTop: '15px' }}>
+                                  {showSignature && (
+                                    <img 
+                                      src="/signature.png" 
+                                      alt="Authorised Signature & Seal" 
+                                      style={{ 
+                                        position: 'absolute', 
+                                        top: '20px', 
+                                        height: '54px', 
+                                        maxWidth: '260px', 
+                                        objectFit: 'contain',
+                                        pointerEvents: 'none'
+                                      }} 
+                                    />
+                                  )}
+                                  <div style={{ textAlign: 'center', width: '100%', marginTop: 'auto', paddingTop: '15px' }}>
                                     <div style={{ borderBottom: '1px dotted #08103A', width: '80%', margin: '0 auto 4px' }}></div>
                                     <strong>Receiver's Signature with seal</strong>
                                   </div>
@@ -1955,15 +1977,15 @@ export default function LrCreator({ loadedLr = null, triggerToast = null }) {
                                   <div style={{ width: '100%', display: 'flex', justifyContent: 'center' }}>
                                     <img src="/Title.png" alt="SREE VAARAHI AMMAN TRANSPORTS" style={{ height: '18px', width: 'auto', objectFit: 'contain' }} />
                                   </div>
-                                  {showSignature && signatureImage && (
+                                  {showSignature && (
                                     <img 
-                                      src={signatureImage} 
-                                      alt="Signature" 
+                                      src="/signature-only.png" 
+                                      alt="Signature Only" 
                                       style={{ 
                                         position: 'absolute', 
                                         top: '20px', 
                                         height: '54px', 
-                                        maxWidth: '260px', 
+                                        maxWidth: '220px', 
                                         objectFit: 'contain',
                                         pointerEvents: 'none'
                                       }} 
